@@ -7,6 +7,7 @@ import org.apache.cordova.CordovaWebView;
 
 import org.json.JSONException;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import android.app.Activity;
 import android.content.Context;
@@ -20,7 +21,9 @@ import java.net.URLEncoder;
 
 import com.microsoft.identity.client.AuthenticationCallback;
 import com.microsoft.identity.client.IAuthenticationResult;
+import com.microsoft.identity.client.IMultipleAccountPublicClientApplication;
 import com.microsoft.identity.client.ISingleAccountPublicClientApplication;
+import com.microsoft.identity.client.MultipleAccountPublicClientApplication;
 import com.microsoft.identity.client.PublicClientApplication;
 import com.microsoft.identity.client.exception.MsalException;
 
@@ -29,16 +32,22 @@ public class MsalPlugin extends CordovaPlugin {
     private Activity activity;
     private Context context;
     private CallbackContext callbackContext;
-    private ISingleAccountPublicClientApplication app;
-    private boolean appCreated = false;
+    private ISingleAccountPublicClientApplication appSingleClient;
+    private IMultipleAccountPublicClientApplication appMultipleClient;
 
     private String clientId;
     private String tenantId;
     private String keyHash;
+    private String accountMode;
 
     private static final String SIGN_IN_SILENT = "signInSilent";
     private static final String SIGN_IN_INTERACTIVE = "signInInteractive";
     private static final String SIGN_OUT = "signOut";
+    private static final String MSAL_INIT = "msalInit";
+    private static final String GET_ACCOUNTS = "getAccounts";
+
+    private static final String SINGLE_ACCOUNT = "SINGLE";
+    private static final String MULTIPLE_ACCOUNTS = "MULTIPLE";
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
@@ -48,24 +57,10 @@ public class MsalPlugin extends CordovaPlugin {
         context = webView.getContext();
 
         clientId = this.preferences.getString("clientId","");
-        tenantId = this.preferences.getString("tenantId","");
+        tenantId = this.preferences.getString("tenantId","common");
         keyHash = this.preferences.getString("keyHash","");
 
-        cordova.getThreadPool().execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    File config = createConfigFile();
-                    MsalPlugin.this.app = PublicClientApplication.createSingleAccountPublicClientApplication(context, config);
-                    config.delete();
-                    MsalPlugin.this.appCreated = true;
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (MsalException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+
     }
 
     @Override
@@ -73,9 +68,11 @@ public class MsalPlugin extends CordovaPlugin {
         this.callbackContext = callbackContext;
 
         try {
+            if (MSAL_INIT.equals(action)) {
+                this.msalInit(args.getJSONObject(0));
+            }
             if (SIGN_IN_SILENT.equals(action)) {
                 this.signinUserSilent();
-
             }
             if (SIGN_OUT.equals(action)) {
                 this.signOut();
@@ -92,23 +89,78 @@ public class MsalPlugin extends CordovaPlugin {
         return true;
     }
 
+    private void msalInit(final JSONObject options) {
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String keyHashUrlFriendly = "";
+                    try {
+                        keyHashUrlFriendly = URLEncoder.encode(MsalPlugin.this.keyHash, "UTF-8");
+                    } catch(UnsupportedEncodingException e) {
+                        MsalPlugin.this.callbackContext.error(e.getMessage());
+                    }
+                    StringBuilder authorities = new StringBuilder("    \"authorities\" : [\n");
+                    String data = "";
+                    try {
+                        JSONArray authoritiesList = options.getJSONArray("authorities");
+                        for (int i = 0; i < authoritiesList.length(); ++i) {
+                            JSONObject authority = authoritiesList.getJSONObject(i);
+                            authorities.append("      {\n");
+                            authorities.append("        \"type\": \"" + authority.getString("type") + "\",\n");
+                            authorities.append("        \"audience\": {\n");
+                            authorities.append("          \"type\": \"" + authority.getString("audience") + "\",\n");
+                            authorities.append("          \"tenant_id\": \"" + MsalPlugin.this.tenantId + "\"\n");
+                            authorities.append("        }\n");
+                            if (authority.has("authorityUrl")) {
+                                authorities.append("          \"authority_url\": \"" + authority.getString("authorityUrl") + "\"\n");
+                            }
+                            if (authority.has("default")) {
+                                authorities.append("          \"default\": " + authority.getBoolean("default") + "\n");
+                            }
+                            authorities.append("      }\n");
+                        }
+                        authorities.append("    ]\n");
+                        data = "{\n" +
+                                "    \"client_id\" : \"" + MsalPlugin.this.clientId + "\",\n" +
+                                "    \"account_mode\": \"" + options.getString("accountMode") + "\",\n" +
+                                // TODO: Make WEBVIEW dynamic after OutSystems branch: options.getString("authorizationUserAgent")
+                                "    \"authorization_user_agent\" : \"WEBVIEW\",\n" +
+                                "    \"redirect_uri\" : \"msauth://" + MsalPlugin.this.activity.getApplicationContext().getPackageName() + "/" + keyHashUrlFriendly + "\",\n" +
+                                "    \"multiple_clouds_supported\": " + options.getBoolean("multipleCloudsSupported") + ",\n" +
+                                "    \"broker_redirect_uri_registered\": " + options.getBoolean("brokerRedirectUri") + ",\n" +
+                                authorities.toString() +
+                                "  }";
+                        File config = createConfigFile(data);
+                        if (options.getString("accountMode").equals(SINGLE_ACCOUNT)) {
+                            MsalPlugin.this.appSingleClient = PublicClientApplication.createSingleAccountPublicClientApplication(context, config);
+                            MsalPlugin.this.accountMode = SINGLE_ACCOUNT;
+                        } else {
+                            MsalPlugin.this.appMultipleClient = MultipleAccountPublicClientApplication.createMultipleAccountPublicClientApplication(context, config);
+                            MsalPlugin.this.accountMode = MULTIPLE_ACCOUNTS;
+                        }
+                        config.delete();
+                    } catch (JSONException ignored) {}
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (MsalException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
     private void signinUserSilent() {
         cordova.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
                 try {
-                    if (!MsalPlugin.this.appCreated) {
-                        File config = createConfigFile();
-                        MsalPlugin.this.app = PublicClientApplication.createSingleAccountPublicClientApplication(context, config);
-                        config.delete();
-                        MsalPlugin.this.appCreated = true;
-                    }
                     String[] scopes = {"User.Read"};
-                    String authority = MsalPlugin.this.app.getConfiguration().getDefaultAuthority().getAuthorityURL().toString();
-                    if(MsalPlugin.this.app.getCurrentAccount().getCurrentAccount() == null) {
+                    String authority = MsalPlugin.this.appSingleClient.getConfiguration().getDefaultAuthority().getAuthorityURL().toString();
+                    if(MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount() == null) {
                         MsalPlugin.this.callbackContext.error("No account currently exists");
                     } else {
-                        IAuthenticationResult silentAuthResult = MsalPlugin.this.app.acquireTokenSilent(scopes, authority);
+                        IAuthenticationResult silentAuthResult = MsalPlugin.this.appSingleClient.acquireTokenSilent(scopes, authority);
                         MsalPlugin.this.callbackContext.success(silentAuthResult.getAccessToken());
                     }
                 } catch (InterruptedException e) {
@@ -125,14 +177,8 @@ public class MsalPlugin extends CordovaPlugin {
             @Override
             public void run() {
                 try {
-                    if (!MsalPlugin.this.appCreated) {
-                        File config = createConfigFile();
-                        MsalPlugin.this.app = PublicClientApplication.createSingleAccountPublicClientApplication(context, config);
-                        config.delete();
-                        MsalPlugin.this.appCreated = true;
-                    }
                     String[] scopes = {"User.Read"};
-                    MsalPlugin.this.app.signIn(MsalPlugin.this.activity, "", scopes, new AuthenticationCallback() {
+                    MsalPlugin.this.appSingleClient.signIn(MsalPlugin.this.activity, "", scopes, new AuthenticationCallback() {
                         @Override
                         public void onCancel() {
                             MsalPlugin.this.callbackContext.error("Login cancelled.");
@@ -148,10 +194,6 @@ public class MsalPlugin extends CordovaPlugin {
                             MsalPlugin.this.callbackContext.error(e.getMessage());
                         }
                     });
-                } catch (InterruptedException e) {
-                    MsalPlugin.this.callbackContext.error(e.getMessage());
-                } catch (MsalException e) {
-                    MsalPlugin.this.callbackContext.error(e.getMessage());
                 }
             }
         });
@@ -162,15 +204,8 @@ public class MsalPlugin extends CordovaPlugin {
             @Override
             public void run() {
                 try {
-                    if (!MsalPlugin.this.appCreated) {
-                        File config = createConfigFile();
-                        MsalPlugin.this.app = PublicClientApplication.createSingleAccountPublicClientApplication(context, config);
-                        config.delete();
-                        MsalPlugin.this.appCreated = true;
-                    }
-                    String[] scopes = {"User.Read"};
-                    if(MsalPlugin.this.app.getCurrentAccount().getCurrentAccount() != null) {
-                        MsalPlugin.this.app.signOut(new ISingleAccountPublicClientApplication.SignOutCallback() {
+                    if(MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount() != null) {
+                        MsalPlugin.this.appSingleClient.signOut(new ISingleAccountPublicClientApplication.SignOutCallback() {
                             @Override
                             public void onSignOut() {
                                 MsalPlugin.this.callbackContext.success();
@@ -193,29 +228,7 @@ public class MsalPlugin extends CordovaPlugin {
         });
     }
 
-    private File createConfigFile() {
-        String keyHashUrlFriendly = "";
-        try {
-            keyHashUrlFriendly = URLEncoder.encode(MsalPlugin.this.keyHash, "UTF-8");
-        } catch(UnsupportedEncodingException e) {
-            MsalPlugin.this.callbackContext.error(e.getMessage());
-        }
-        String data = "{\n" +
-        "    \"client_id\" : \"" + MsalPlugin.this.clientId + "\",\n" +
-        "    \"account_mode\": \"SINGLE\",\n" +
-        "    \"authorization_user_agent\" : \"WEBVIEW\",\n" +
-        "    \"redirect_uri\" : \"msauth://" + MsalPlugin.this.activity.getApplicationContext().getPackageName() + "/" + keyHashUrlFriendly + "\",\n" +
-        "    \"broker_redirect_uri_registered\": true,\n" +
-        "    \"authorities\" : [\n" +
-        "      {\n" +
-        "        \"type\": \"AAD\",\n" +
-        "        \"audience\": {\n" +
-        "          \"type\": \"AzureADMyOrg\",\n" +
-        "          \"tenant_id\": \"" + MsalPlugin.this.tenantId + "\"\n" +
-        "        }\n" +
-        "      }\n" +
-        "    ]\n" +
-        "  }";
+    private File createConfigFile(String data) {
         File config = new File(this.context.getFilesDir() + "auth_config.json");
         if (config.exists()) {
             return config;

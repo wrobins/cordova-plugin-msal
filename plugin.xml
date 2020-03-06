@@ -15,7 +15,7 @@
     <js-module src="www/msalplugin.js" name="msalPlugin">
         <clobbers target="cordova.plugins.msalPlugin" />
     </js-module>
-    <preference name="TENANT_ID" default="not-provided" />
+    <preference name="TENANT_ID" default="common" />
     <preference name="CLIENT_ID" />
     <preference name="KEY_HASH" default="not-provided" />
     <platform name="android">
