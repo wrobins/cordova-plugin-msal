@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        id="cordova-plugin-msal" version="0.1.0">
+    <name>Cordova MSAL Plugin</name>
+    <description>A Cordova plugin providing a wrapper for Microsoft's MSAL library for Android and iOS.</description>
+    <author>Walter Robins</author>
+    <keywords>cordova,android,outsystems,ios,microsoft,msal,azure,graphapi,authentication</keywords>
+    <license>Apache 2.0</license>
+    <repo>https://github.com/wrobins/cordova-plugin-msal.git</repo>
+    <issue>https://github.com/wrobins/cordova-plugin-msal/issues</issue>
+    <engines>
+        <engine name="cordova" version=">=7.0.0"/>
+    </engines> 
+    <js-module src="www/msalplugin.js" name="msalPlugin">
+        <clobbers target="cordova.plugins.msalPlugin" />
+    </js-module>
+    <preference name="TENANT_ID" default="not-provided" />
+    <preference name="CLIENT_ID" />
+    <preference name="KEY_HASH" default="not-provided" />
+    <platform name="android">
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="MsalPlugin">
+                <param name="android-package" value="com.wrobins.cordova.plugin.MsalPlugin" />
+                <preference name="tenantId" value="$TENANT_ID" />
+                <preference name="clientId" value="$CLIENT_ID" />
+                <preference name="keyHash" value="$KEY_HASH" />
+            </feature>
+            <feature name="AuthenticationCallback">
+                <param name="android-package" value="com.microsoft.identity.client.AuthenticationCallback" />
+            </feature>
+            <feature name="IAuthenticationResult">
+                <param name="android-package" value="com.microsoft.identity.client.IAuthenticationResult" />
+            </feature>
+            <feature name="ISingleAccountPublicClientApplication">
+                <param name="android-package" value="com.microsoft.identity.client.ISingleAccountPublicClientApplication" />
+            </feature>
+            <feature name="PublicClientApplication">
+                <param name="android-package" value="com.microsoft.identity.client.PublicClientApplication" />
+            </feature>
+            <feature name="MsalException">
+                <param name="android-package" value="com.microsoft.identity.client.exception.MsalException" />
+            </feature>
+            <feature name="JWTParser">
+                <param name="android-package" value="com.nimbusds.jwt.JWTParser" />
+            </feature>
+            <feature name="Base64">
+                <param name="android-package" value="com.nimbusds.jose.util.Base64" />
+            </feature>
+        </config-file>
+        <config-file target="AndroidManifest.xml" parent="/*">
+            <uses-permission android:name="android.permission.INTERNET "/>
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE "/>
+            <uses-permission android:name="android.permission.READ_CONTACTS" />
+        </config-file>
+        <config-file target="AndroidManifest.xml" parent="application">
+            <activity
+                android:name="com.microsoft.identity.client.BrowserTabActivity">
+                <intent-filter>
+                    <action android:name="android.intent.action.VIEW" />
+                    <category android:name="android.intent.category.DEFAULT" />
+                    <category android:name="android.intent.category.BROWSABLE" />
+                    <data
+                        android:scheme="msauth"
+                        android:host="$PACKAGE_NAME"
+                        android:path="/$KEY_HASH" />
+                </intent-filter>
+            </activity>
+        </config-file>
+        <resource-file src="src/android/libs/common-1.0.7.aar" target="libs/common-1.0.7.aar" />
+        <resource-file src="src/android/libs/msal-1.0.0.aar" target="libs/msal-1.0.0.aar" />
+        <resource-file src="src/android/libs/nimbus-jose-jwt-5.7.jar" target="libs/nimbus-jose-jwt-5.7.jar" />
+        <source-file src="src/android/MsalPlugin.java" target-dir="src/com/wrobins/cordova/plugin" />
+        <framework src="src/android/build.gradle" custom="true" type="gradleReference" />
+    </platform>
+    <platform name="ios">
+        <config-file target="config.xml" parent="/*">
+            <feature name="MsalPlugin">
+                <param name="ios-package" value="MsalPlugin" />
+                <param name="onload" value="true" />
+                <preference name="tenantId" value="$TENANT_ID" />
+                <preference name="clientId" value="$CLIENT_ID" />
+            </feature>
+            <feature name="">
+                <param name="ios-package" value="" />
+            </feature>
+            <feature name="MSALPublicClientApplication">
+                <param name="ios-package" value="MSALPublicClientApplication" />
+            </feature>
+            <feature name="MSALPublicClientApplicationConfig">
+                <param name="ios-package" value="MSALPublicClientApplicationConfig" />
+            </feature>
+            <feature name="MSALAccount">
+                <param name="ios-package" value="MSALAccount" />
+            </feature>
+            <feature name="MSALSilentTokenParameters">
+                <param name="ios-package" value="MSALSilentTokenParameters" />
+            </feature>
+            <feature name="MSALResult">
+                <param name="ios-package" value="MSALResult" />
+            </feature>
+            <feature name="MSALWebviewParameters">
+                <param name="ios-package" value="MSALWebviewParameters" />
+            </feature>
+            <feature name="MSALInteractiveTokenParameters">
+                <param name="ios-package" value="MSALInteractiveTokenParameters" />
+            </feature>
+            <feature name="MSALError">
+                <param name="ios-package" value="MSALError" />
+            </feature>
+        </config-file>
+        <config-file target="*-Info.plist" parent="CFBundleURLTypes">
+            <array>
+                <dict>
+                    <key>CFBundleURLSchemes</key>
+                    <array>
+                        <string>msauth.$PACKAGE_NAME</string>
+                    </array>
+                </dict>
+            </array>
+        </config-file>
+        <config-file target="*-Info.plist" parent="LSApplicationQueriesSchemes">
+            <array>
+                <string>msauthv2</string>
+                <string>msauthv3</string>
+            </array>
+        </config-file>
+        <config-file parent="keychain-access-groups" target="*/Entitlements-Debug.plist">
+            <array>
+                <string>$(AppIdentifierPrefix)com.microsoft.adalcache</string>
+            </array>
+        </config-file>
+        <config-file parent="keychain-access-groups" target="*/Entitlements-Release.plist">
+            <array>
+                <string>$(AppIdentifierPrefix)com.microsoft.adalcache</string>
+            </array>
+        </config-file>
+        <header-file src="src/ios/MsalPlugin.h" />
+        <header-file src="src/ios/AppDelegate+MsalCallback.h" />
+        <source-file src="src/ios/MsalPlugin.m" />
+        <source-file src="src/ios/AppDelegate+MsalCallback.m" />
+        <framework src="src/ios/MSAL.framework" embed="true" custom="true" />
+    </platform>
+</plugin>
