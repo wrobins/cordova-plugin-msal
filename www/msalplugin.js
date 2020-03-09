@@ -13,7 +13,8 @@ cordova.define("cordova-plugin-msal.msalPlugin", function(require, exports, modu
               authorizationUserAgent: 'DEFAULT', // Android only, 'DEFAULT' 'BROWSER' or 'WEBVIEW' OutSystems is 'WEBVIEW' only
               multipleCloudsSupported: false, // Android, Set to true if you enabled this in your Azure AD client
               brokerRedirectUri: false, // Android, Set to true if you want to support the device's broker, such as the Authenticator app. Will be ignored if using only the 'PersonalMicrosoftAccount' AAD authority
-              accountMode: 'SINGLE' // Android and iOS: either 'SINGLE' or 'MULTIPLE'. Specifies how many accounts can be used in your app at a time, and what interfaces you are allowed to use to authenticate.
+              accountMode: 'SINGLE', // Android and iOS: either 'SINGLE' or 'MULTIPLE'. Specifies how many accounts can be used in your app at a time, and what interfaces you are allowed to use to authenticate.
+              scopes: ['User.Read']
           }
           if (!options) {
               options = defaultOptions;
@@ -33,6 +34,9 @@ cordova.define("cordova-plugin-msal.msalPlugin", function(require, exports, modu
               if (typeof(options.accountMode) == "undefined") {
                   options.accountMode = defaultOptions.accountMode;
               }
+              if (typeof(options.scopes) == "undefined") {
+                  options.scopes = defaultOptions.scopes;
+              }
           }
           cordova.exec(successCallback, errorCallback, 'MsalPlugin', 'msalInit', [JSON.stringify(options)]);
       },
@@ -42,8 +46,8 @@ cordova.define("cordova-plugin-msal.msalPlugin", function(require, exports, modu
       signInSilent: function(successCallback, errorCallback, account) {
           cordova.exec(successCallback, errorCallback, 'MsalPlugin', 'signInSilent', [account]);
       },
-      signInInteractive: function(successCallback, errorCallback, account) {
-          cordova.exec(successCallback, errorCallback, 'MsalPlugin', 'signInInteractive', [account]);
+      signInInteractive: function(successCallback, errorCallback) {
+          cordova.exec(successCallback, errorCallback, 'MsalPlugin', 'signInInteractive', []);
       },
       signOut: function(successCallback, errorCallback, account) {
           cordova.exec(successCallback, errorCallback, 'MsalPlugin', 'signOut', [account]);
