@@ -4,9 +4,10 @@ cordova.define("cordova-plugin-msal.msalPlugin", function(require, exports, modu
           const defaultOptions = {
               authorities: [
                   {
-                      type: 'AAD', // Android, 'AAD' or 'B2C'
-                      audience: 'AzureADandPersonalMicrosoftAccount', // Android, 'AzureADandPersonalMicrosoftAccount' or 'AzureADMyOrg' or 'AzureADMultipleOrgs' or 'PersonalMicrosoftAccount'. If 'AzureADMyOrg' make sure you specified the TENANT_ID variable
-                      authorityUrl: '', // Android, only needed if type = 'B2C'
+                      type: 'AAD', // Android and iOS, 'AAD' or 'B2C'
+                      audience: 'AzureADandPersonalMicrosoftAccount', // Android and iOS, 'AzureADandPersonalMicrosoftAccount' or 'AzureADMyOrg' or 'AzureADMultipleOrgs' or 'PersonalMicrosoftAccount'. If 'AzureADMyOrg' make sure you specified the TENANT_ID variable
+                      authorityUrl: '', // Android and iOS, only needed if type = 'B2C'
+                      cloudInstance: 'MSALAzurePublicCloudInstance', // iOS only, 'MSALAzurePublicCloudInstance', 'MSALAzureChinaCloudInstance', 'MSALAzureGermanyCloudInstance', 'MSALAzureUsGovernmentCloudInstance'
                       default: true // Android, only needed if multiple authorities
                   }
               ],
