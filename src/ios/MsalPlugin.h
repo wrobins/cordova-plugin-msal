@@ -6,12 +6,12 @@
 @property MSALPublicClientApplicationConfig *config;
 @property MSALPublicClientApplication *application;
 @property NSArray<NSString *> *scopes;
-@property MSALAccount *account;
 @property NSString *clientId;
 @property NSString *tenantId;
+@property NSString *accountMode;
 
-- (void) pluginInitialize;
-
+- (void)msalInit:(CDVInvokedUrlCommand*)command;
+- (void)getAccounts:(CDVInvokedUrlCommand*)command;
 - (void)signInSilent:(CDVInvokedUrlCommand*)command;
 - (void)signInInteractive:(CDVInvokedUrlCommand*)command;
 - (void)signOut:(CDVInvokedUrlCommand*)command;
