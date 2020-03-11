@@ -15,7 +15,7 @@
     CDVPluginResult *result = nil;
     
     MSALAuthority *defaultAuthority;
-    NSMutableArray<MSALAuthority *> *allAuthorities = [NSMutableArray alloc];
+    NSMutableArray<MSALAuthority *> *allAuthorities = [[NSMutableArray alloc] init];
 
     NSString *argument = [command.arguments objectAtIndex:0];
     NSData *json = [argument dataUsingEncoding:NSUTF8StringEncoding];
@@ -59,12 +59,26 @@
         }
         if ([(NSString *)[a objectForKey:@"type"] isEqualToString:@"AAD"])
         {
-            authority = [[MSALAADAuthority alloc] initWithCloudInstance:MSALAzurePublicCloudInstance audienceType:MSALAzureADAndPersonalMicrosoftAccountAudience rawTenant:self.tenantId error:&err];
+            NSString *rawTenant = nil;
+            if (audience == MSALAzureADMyOrgOnlyAudience)
+            {
+                rawTenant = [self tenantId];
+            }
+            authority = [[MSALAADAuthority alloc] initWithCloudInstance:cloudInstance audienceType:audience rawTenant:rawTenant error:&err];
         }
         else
         {
             NSURL *authorityUrl = [[NSURL alloc] initWithString:(NSString *)[a objectForKey:@"authorityUrl"]];
             authority = [[MSALB2CAuthority alloc] initWithURL:authorityUrl error:&err];
+        }
+        if (err)
+        {
+            NSDictionary *internal = [err userInfo];
+            NSNumber *ie = [internal objectForKey:@"MSALInternalErrorCodeKey"];
+            MSALInternalError internalError = ie;
+            result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[err localizedDescription]];
+            [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+            return;
         }
         [allAuthorities addObject:authority];
         if ([a objectForKey:@"default"] == [NSNumber numberWithBool:YES]) {
@@ -91,13 +105,10 @@
 
 - (void)getAccounts:(CDVInvokedUrlCommand *)command
 {
-    NSMutableArray<NSDictionary *> *accounts = [NSMutableArray<NSDictionary *> alloc];
+    NSMutableArray<NSDictionary *> *accounts = [[NSMutableArray<NSDictionary *> alloc] init];
     for (MSALAccount *account in [[self application] allAccounts:nil])
     {
-        NSDictionary *accountObj = [NSDictionary alloc];
-        [accountObj setValue:[account identifier] forKey:@"id"];
-        [accountObj setValue:[account username] forKey:@"username"];
-        [accounts addObject:accountObj];
+        [accounts addObject:@{ @"id" : [account identifier], @"username" : [account username]}];
     }
     CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:accounts];
     [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
