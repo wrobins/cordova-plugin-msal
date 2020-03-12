@@ -89,6 +89,8 @@ This specifies the locale of your organization's Azure instance. Can be one of t
 Boolean supplied if your authorities array contains multiple objects. Tells MSAL to try this authority first when signing in a user. Default: true
 #### authorizationUserAgent
 This is for Android - tells MSAL which webview to use when redirecting a user to sign in interactively (stay inside the native app's webview or use the device's external browser). Can be one of the following: 'DEFAULT' 'BROWSER' or 'WEBVIEW'. Default: 'DEFAULT'. Note: in OutSystems, this option is locked on 'WEBVIEW' regardless of what you try to set here because anything else requires androidX features which MABS does not currently allow.
+#### multipleCloudsSupported
+If your organization supports multiple national clouds, set this to true. Otherwise, especially if you don't know what multiple national clouds means, leave this at false. Default: false
 #### brokerRedirectUri
 This is another Android option (boolean). Set to true if you want your application to have access to Microsoft accounts stored on the device's account broker, such as the built in broker or the Microsoft Authenticator app. This doesn't apply to iOS because by default MSAL already tries to use the account broker in Safari for this purpose. Default: false
 #### accountMode
