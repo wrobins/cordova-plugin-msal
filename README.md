@@ -75,25 +75,25 @@ The options parameter is an object that contains all of your MSAL configuration 
 Like I said before, this readme assumes basic knowledge of MSAL and you should look at Microsoft's documentation for how most of these attributes work, as they are named very similar both in this library and in all native platforms. But here is a basic refresher of what each option does and how to use it in this plugin.
 
 Once again, you can omit any of these attributes in your options object and the default ones will be supplied to our native code, which should work for most developers. You can even not pass in this third argument at all, and a complete default options object will be used.
-## authorities
+#### authorities
 This tells MSAL where it should look to find the client's account and redirect them to login. You can specify one or more. Default: one authority object (see below)
-### type
+##### type
 Can be either 'AAD' or 'B2C'. Default: 'AAD'
-### audience
+##### audience
 What kind of accounts are you allowing (personal, work/school, both)? Can be one of the following: 'AzureADandPersonalMicrosoftAccount' or 'AzureADMyOrg' or 'AzureADMultipleOrgs' or 'PersonalMicrosoftAccount'. If you use 'AzureADMyOrg' make sure you specified the TENANT_ID variable when you installed this plugin. Default: 'AzureADandPersonalMicrosoftAccount'
-### authorityUrl
+##### authorityUrl
 If this authority type is 'B2C' this is required - specify the literal URL you would redirect your user to sign in (ex. 'https://login.microsoftonline.com/tfp/contoso.onmicrosoft.com/B2C_1_SISOPolicy/'). If type is 'AAD' then leave blank. Default: ''
-### cloudInstance
+##### cloudInstance
 This specifies the locale of your organization's Azure instance. Can be one of the following: 'MSALAzurePublicCloudInstance', 'MSALAzureChinaCloudInstance', 'MSALAzureGermanyCloudInstance', or 'MSALAzureUsGovernmentCloudInstance'. Default: 'MSALAzurePublicCloudInstance'
-### default
+##### default
 Boolean supplied if your authorities array contains multiple objects. Tells MSAL to try this authority first when signing in a user. Default: true
-## authorizationUserAgent
+#### authorizationUserAgent
 This is for Android - tells MSAL which webview to use when redirecting a user to sign in interactively (stay inside the native app's webview or use the device's external browser). Can be one of the following: 'DEFAULT' 'BROWSER' or 'WEBVIEW'. Default: 'DEFAULT'. Note: in OutSystems, this option is locked on 'WEBVIEW' regardless of what you try to set here because anything else requires androidX features which MABS does not currently allow.
-## brokerRedirectUri
+#### brokerRedirectUri
 This is another Android option (boolean). Set to true if you want your application to have access to Microsoft accounts stored on the device's account broker, such as the built in broker or the Microsoft Authenticator app. This doesn't apply to iOS because by default MSAL already tries to use the account broker in Safari for this purpose. Default: false
-## accountMode
+#### accountMode
 This is either 'SINGLE' or 'MULTIPLE' and controls the behavior of signing in and out. In single mode, MSAL only uses one account at a time, and signs in the user silently with that account if you call signInSilent(). In multiple account mode, you can support multiple accounts in your app, but you need to manage MSAL's list of those accounts (see below) and pass in which account you want to sign in and out of unless you're doing interactive sign-in. Default: 'SINGLE'
-## scopes
+#### scopes
 This is a text array and represents the information MSAL requests from the Graph API during its operation. In most cases you won't need to change this, and only do so if you really know what you're doing. Default: ['User.Read']
 
 Ok, you have your plugin initialized with your organization's configuration. Here's how you sign users in and out:
@@ -203,7 +203,7 @@ window.cordova.plugins.msalPlugin.signOut(
 Once you get a successful sign-in, the plugin just returns the JWT for that account. You can validate it against Graph:
 <pre>
 GET https://graph.microsoft.com/v1.0/me
-'Authorization': 'Bearer myaccountJWTToken'
+'Authorization': 'Bearer myaccountJWT'
 </pre>
 You'll get an object back something like:
 ```js
