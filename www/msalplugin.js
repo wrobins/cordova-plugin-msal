@@ -1,6 +1,6 @@
 module.exports = {
     msalInit: function(successCallback, errorCallback, options) {
-        const defaultOptions = {
+        var defaultOptions = {
             authorities: [
                 {
                     type: 'AAD',
