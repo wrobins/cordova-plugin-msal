@@ -1,5 +1,5 @@
 # Cordova MSAL Plugin
-So you want to integrate your mobile app with our Microsoft authentication service?
+So you want to integrate your mobile app with Microsoft's authentication service?
 ## Basic Assumptions and Requirements
 This plugin implements [Microsoft's MSAL plugin](https://docs.microsoft.com/en-us/azure/active-directory/develop/msal-overview) for Android and iOS. I'm assuming you're here because you've already read their documentation and understand how to configure Azure AD authentication for your organization and are simply looking for an existing Cordova wrapper to implement it on the mobile side.
 ## How do I install it?
@@ -13,6 +13,8 @@ If you aren't using AzureADMyOrg as one of your authorities, you can omit TENANT
 cordova plugin add cordova-plugin-msal --variable TENANT_ID=your-tenant-guid-here --variable CLIENT_ID=your-client-guid-here --variable KEY_HASH=S0m3K3yh4shH3re=
 </pre>
 ### If you're using OutSystems
+You should use my [forge component](https://www.outsystems.com/forge/Component_Overview.aspx?ProjectId=8038). But if you want to implement a wrapper yourself, or if you're here because you're using that component and you want additional documentation, continue reading:
+
 Be sure to grab a release tagged with OutSystems-*. I have a separate branch for OutSystems because as of this writing, MABS (MABS 6.x) does not support AndroidX features, which are now a standard part of the Android MSAL library. I had to do some finagling with a custom build of the library with AndroidX features stripped out to avoid getting an error trying to build it with MABS.
 
 A side effect of this is the authorizationUserAgent option is locked on WEBVIEW, since the other options rely on AndroidX.
