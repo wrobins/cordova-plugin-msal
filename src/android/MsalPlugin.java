@@ -226,7 +226,7 @@ public class MsalPlugin extends CordovaPlugin {
                         // Look for account first so we don't error out for one that doesn't exist
                         boolean found = false;
                         for (IAccount search: MsalPlugin.this.appMultipleClient.getAccounts()) {
-                            if (search.getId() == account) {
+                            if (search.getId().equals(account)) {
                                 found = true;
                                 break;
                             }
@@ -312,7 +312,7 @@ public class MsalPlugin extends CordovaPlugin {
                         // Look for account first so we don't error out for one that doesn't exist
                         boolean found = false;
                         for (IAccount search: MsalPlugin.this.appMultipleClient.getAccounts()) {
-                            if (search.getId() == account) {
+                            if (search.getId().equals(account)) {
                                 found = true;
                                 break;
                             }
