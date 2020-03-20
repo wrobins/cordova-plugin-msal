@@ -36,5 +36,10 @@
     "bugs": {
       "url": "https://github.com/wrobins/cordova-plugin-msal/issues"
     },
-    "homepage": "https://github.com/wrobins/cordova-plugin-msal"
+    "homepage": "https://github.com/wrobins/cordova-plugin-msal",
+    "publishConfig": {
+      {
+        "registry": "https://npm.pkg.github.com/" 
+      }
+    }
   }
