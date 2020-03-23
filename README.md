@@ -23,7 +23,7 @@ Here's the JSON you'll need to configure your plugin. If you only have one envir
 <pre>
 {
     "plugin": {
-        "url": "https://github.com/wrobins/cordova-plugin-msal.git#OutSystems-v1.0.0",
+        "url": "https://github.com/wrobins/cordova-plugin-msal.git#OutSystems-v1.1.0",
         "variables": [
             {
                 "name": "TENANT_ID",
