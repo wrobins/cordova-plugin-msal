@@ -229,3 +229,10 @@ You'll get an object back something like:
 }
 ```
 You can use that in your business logic to manage your accounts locally.
+
+## Troubleshooting
+This plugin uses androidx features. If you get an error complaining about conflicting dependencies, you might need to add a couple of plugins to provide androidx compatibility, but your results may vary depending on if you are building locally or with a cloud-based utility.
+<pre>
+cordova plugin add cordova-plugin-androidx
+cordova plugin add cordova-plugin-androidx-adapter
+</pre>
