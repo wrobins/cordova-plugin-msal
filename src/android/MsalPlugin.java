@@ -119,7 +119,7 @@ public class MsalPlugin extends CordovaPlugin {
                             authorities.append("          \"type\": \"" + authority.getString("audience") + "\",\n");
                             authorities.append("          \"tenant_id\": \"" + MsalPlugin.this.tenantId + "\"\n");
                             authorities.append("        },\n");
-                            if (authority.has("authorityUrl")) {
+                            if (authority.has("authorityUrl") && !authority.getString("authorityUrl").equals("")) {
                                 authorities.append("          \"authority_url\": \"" + authority.getString("authorityUrl") + "\",\n");
                             }
                             if (authority.has("default")) {

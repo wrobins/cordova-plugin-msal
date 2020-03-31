@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
-        id="cordova-plugin-msal" version="1.1.0">
+        id="cordova-plugin-msal" version="2.0.0">
     <name>Cordova MSAL Plugin</name>
     <description>A Cordova plugin providing a wrapper for Microsoft's MSAL library for Android and iOS.</description>
     <author>Walter Robins</author>
@@ -26,27 +26,6 @@
                 <preference name="clientId" value="$CLIENT_ID" />
                 <preference name="keyHash" value="$KEY_HASH" />
             </feature>
-            <feature name="AuthenticationCallback">
-                <param name="android-package" value="com.microsoft.identity.client.AuthenticationCallback" />
-            </feature>
-            <feature name="IAuthenticationResult">
-                <param name="android-package" value="com.microsoft.identity.client.IAuthenticationResult" />
-            </feature>
-            <feature name="ISingleAccountPublicClientApplication">
-                <param name="android-package" value="com.microsoft.identity.client.ISingleAccountPublicClientApplication" />
-            </feature>
-            <feature name="PublicClientApplication">
-                <param name="android-package" value="com.microsoft.identity.client.PublicClientApplication" />
-            </feature>
-            <feature name="MsalException">
-                <param name="android-package" value="com.microsoft.identity.client.exception.MsalException" />
-            </feature>
-            <feature name="JWTParser">
-                <param name="android-package" value="com.nimbusds.jwt.JWTParser" />
-            </feature>
-            <feature name="Base64">
-                <param name="android-package" value="com.nimbusds.jose.util.Base64" />
-            </feature>
         </config-file>
         <config-file target="AndroidManifest.xml" parent="/*">
             <uses-permission android:name="android.permission.INTERNET "/>
@@ -67,11 +46,8 @@
                 </intent-filter>
             </activity>
         </config-file>
-        <resource-file src="src/android/libs/common-1.0.7.aar" target="libs/common-1.0.7.aar" />
-        <resource-file src="src/android/libs/msal-1.0.0.aar" target="libs/msal-1.0.0.aar" />
-        <resource-file src="src/android/libs/nimbus-jose-jwt-5.7.jar" target="libs/nimbus-jose-jwt-5.7.jar" />
         <source-file src="src/android/MsalPlugin.java" target-dir="src/com/wrobins/cordova/plugin" />
-        <framework src="src/android/build.gradle" custom="true" type="gradleReference" />
+        <framework src="src/android/build-extras.gradle" custom="true" type="gradleReference" />
     </platform>
     <platform name="ios">
         <config-file target="config.xml" parent="/*">
