@@ -23,7 +23,7 @@ Here's the JSON you'll need to configure your plugin. If you only have one envir
 <pre>
 {
     "plugin": {
-        "url": "https://github.com/wrobins/cordova-plugin-msal.git#OutSystems-v1.1.0",
+        "url": "https://github.com/wrobins/cordova-plugin-msal.git#OutSystems-v1.2.0",
         "variables": [
             {
                 "name": "TENANT_ID",
@@ -229,6 +229,34 @@ You'll get an object back something like:
 }
 ```
 You can use that in your business logic to manage your accounts locally.
+
+## Advanced Login Configuration
+Normally, you don't need to pass anything into signInInteractive() other than your callbacks; it just works. But there might be cases where you need some more control over signing someone in.
+You can pass a configuration object to signInInteractive() with as few or as many of the following attributes (they're all optional):
+### loginHint
+If you want to bypass the username selection step, you can provide a username here (string) to pre-populate it and have the user only be asked for a password if need be.
+### prompt
+This string tells MSAL how you want the login experience to be in terms of authentication and consent when they are redirected to Microsoft to sign in. It can be one of four (4) values; by default it is 'WHEN_REQUIRED' which actually is like a null value which tells MSAL not to send a prompt parameter at all and accept all default behavior. Other possible values are:
+#### 'SELECT_ACCOUNT'
+Show a list of possible usernames from which the user can select to sign in
+#### 'LOGIN'
+Normally if a user has had a recent session with Microsoft, even if their local token is cleared from your app and they need to sign in interactively again, they may be allowed back in without entering their password again. Setting prompt to 'LOGIN' will always force a user to be prompted for their password when signing in interactively no matter what.
+#### 'CONSENT'
+Any consent prompts that the user accepted giving your app access to their account the first time they signed in to your app will be given, even if they accepted before.
+### authorizationQueryStringParameters
+This is an array of objects of type {param: string, value: string}, empty by default. There are lots of extra query string parameters that can be passed with MSAL signin requests, and if you know you need to add this you probably already know what you want to put here.
+### otherScopesToAuthorize
+This is an array of strings just like the scopes array you may have provided when you first called msalInit (or maybe you just left it at ['User.Read']). The different here is that the vanilla scopes array only tells MSAL, programatically, which API scopes it's allowed to call when getting data. Users are not asked to consent to those scopes until something tries to use them, which can result in annoying prompts in the middle of using your app. If you provide these extra scopes here as well, the user will be asked to accept all of them at once when signing in and won't get bugged later, regardless of whether those scopes are actually used or not.
+
+Here's an example usage:
+```js
+window.cordova.plugins.msalPlugin.signInInteractive(mycbfunction(msg), myerrorfunction(errmsg), {
+        prompt: 'LOGIN',
+        authorizationQueryStringParameters: [{param: 'domain_hint', value: 'my-tenant-guid'}];
+    }
+);
+```
+
 
 ## Troubleshooting
 This plugin uses androidx features. If you get an error complaining about conflicting dependencies, you might need to add a couple of plugins to provide androidx compatibility, but your results may vary depending on if you are building locally or with a cloud-based utility.
