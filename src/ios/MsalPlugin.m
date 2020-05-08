@@ -174,6 +174,45 @@
     MSALWebviewParameters *webParameters = [[MSALWebviewParameters alloc] initWithParentViewController:[self viewController]];
 
     MSALInteractiveTokenParameters *interactiveParams = [[MSALInteractiveTokenParameters alloc] initWithScopes:[self scopes] webviewParameters:webParameters];
+    
+    NSError *err = nil;
+    CDVPluginResult *result = nil;
+    
+    NSString *argument = [command.arguments objectAtIndex:0];
+    NSData *json = [argument dataUsingEncoding:NSUTF8StringEncoding];
+    id obj = [NSJSONSerialization JSONObjectWithData:json options:0 error:&err];
+    if (err)
+    {
+        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[NSString stringWithFormat:@"Error parsing options object: %@", err]];
+        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+        return;
+    }
+    NSDictionary *options = (NSDictionary *)obj;
+    if (![[options objectForKey:@"loginHint"] isEqualToString:@""])
+    {
+        interactiveParams.loginHint = [options objectForKey:@"loginHint"];
+    }
+    if ([[options objectForKey:@"prompt"] isEqualToString:@"SELECT_ACCOUNT"])
+    {
+        interactiveParams.promptType = MSALPromptTypeSelectAccount;
+    }
+    if ([[options objectForKey:@"prompt"] isEqualToString:@"LOGIN"])
+    {
+        interactiveParams.promptType = MSALPromptTypeLogin;
+    }
+    if ([[options objectForKey:@"prompt"] isEqualToString:@"CONSENT"])
+    {
+        interactiveParams.promptType = MSALPromptTypeConsent;
+    }
+    NSArray *queryStrings = [options objectForKey:@"authorizationQueryStringParameters"];
+    NSMutableDictionary *extraQueryParameers = [[NSMutableDictionary alloc] init];
+    for (NSDictionary *queryString in queryStrings)
+    {
+        [extraQueryParameers setObject:[queryString objectForKey:@"value"] forKey:[queryString objectForKey:@"param"]];
+    }
+    interactiveParams.extraQueryParameters = [[NSDictionary alloc] initWithDictionary:extraQueryParameers];
+    interactiveParams.extraScopesToConsent = [options objectForKey:@"otherScopesToAuthorize"];
+    
     [[self application] acquireTokenWithParameters:interactiveParams completionBlock:^(MSALResult *result, NSError *error) {
         if (!error)
         {
