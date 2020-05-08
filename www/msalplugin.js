@@ -10,7 +10,7 @@ module.exports = {
                     default: true
                 }
             ],
-            authorizationUserAgent: 'DEFAULT',
+            authorizationUserAgent: 'WEBVIEW',
             multipleCloudsSupported: false,
             brokerRedirectUri: false,
             accountMode: 'SINGLE',
