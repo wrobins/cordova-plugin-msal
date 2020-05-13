@@ -178,43 +178,47 @@
     NSError *err = nil;
     CDVPluginResult *result = nil;
     
-    NSString *argument = [command.arguments objectAtIndex:0];
-    NSData *json = [argument dataUsingEncoding:NSUTF8StringEncoding];
-    id obj = [NSJSONSerialization JSONObjectWithData:json options:0 error:&err];
+    NSString *loginHint = (NSString *)[command.arguments objectAtIndex:0];
+    NSString *prompt = (NSString *)[command.arguments objectAtIndex:1];
+    
     if (err)
     {
         result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[NSString stringWithFormat:@"Error parsing options object: %@", err]];
         [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
         return;
     }
-    NSDictionary *options = (NSDictionary *)obj;
-    if (![[options objectForKey:@"loginHint"] isEqualToString:@""])
+    
+    if (![loginHint isEqual:[NSNull null]])
     {
-        interactiveParams.loginHint = [options objectForKey:@"loginHint"];
+        interactiveParams.loginHint = loginHint;
     }
-    if ([[options objectForKey:@"prompt"] isEqualToString:@"SELECT_ACCOUNT"])
-    {
-        interactiveParams.promptType = MSALPromptTypeSelectAccount;
+    
+    if (![prompt isEqual:[NSNull null]]) {
+        if ([prompt isEqualToString:@"SELECT_ACCOUNT"])
+        {
+            interactiveParams.promptType = MSALPromptTypeSelectAccount;
+        }
+        if ([prompt isEqualToString:@"LOGIN"])
+        {
+            interactiveParams.promptType = MSALPromptTypeLogin;
+        }
+        if ([prompt isEqualToString:@"CONSENT"])
+        {
+            interactiveParams.promptType = MSALPromptTypeConsent;
+        }
     }
-    if ([[options objectForKey:@"prompt"] isEqualToString:@"LOGIN"])
-    {
-        interactiveParams.promptType = MSALPromptTypeLogin;
-    }
-    if ([[options objectForKey:@"prompt"] isEqualToString:@"CONSENT"])
-    {
-        interactiveParams.promptType = MSALPromptTypeConsent;
-    }
-    NSArray *queryStrings = [options objectForKey:@"authorizationQueryStringParameters"];
+    
+    NSArray *queryStrings = [command.arguments objectAtIndex:2];
     NSMutableDictionary *extraQueryParameers = [[NSMutableDictionary alloc] init];
     for (NSDictionary *queryString in queryStrings)
     {
         [extraQueryParameers setObject:[queryString objectForKey:@"value"] forKey:[queryString objectForKey:@"param"]];
     }
     interactiveParams.extraQueryParameters = [[NSDictionary alloc] initWithDictionary:extraQueryParameers];
-    interactiveParams.extraScopesToConsent = [options objectForKey:@"otherScopesToAuthorize"];
+    interactiveParams.extraScopesToConsent = [command.arguments objectAtIndex:3];;
     
     [[self application] acquireTokenWithParameters:interactiveParams completionBlock:^(MSALResult *result, NSError *error) {
-        if (!error)
+        if (!error) 
         {
             CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:result.accessToken];
             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
