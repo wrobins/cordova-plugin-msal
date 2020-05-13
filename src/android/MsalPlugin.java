@@ -91,6 +91,9 @@ public class MsalPlugin extends CordovaPlugin {
             }
             if (SIGN_IN_INTERACTIVE.equals(action)) {
                 String loginHint = args.length() > 0 ? args.getString(0) : "";
+                if (loginHint.equals("null")) {
+                    loginHint = "";
+                }
                 Prompt prompt = Prompt.WHEN_REQUIRED;
                 if (args.length() > 1) {
                     switch (args.getString(1)) {
