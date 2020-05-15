@@ -73,10 +73,7 @@
         }
         if (err)
         {
-            NSDictionary *internal = [err userInfo];
-            NSNumber *ie = [internal objectForKey:@"MSALInternalErrorCodeKey"];
-            MSALInternalError internalError = ie;
-            result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[err localizedDescription]];
+            result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[err.userInfo objectForKey:@"MSALErrorDescriptionKey"]];
             [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
             return;
         }
@@ -94,7 +91,7 @@
     self.accountMode = [options objectForKey:@"accountMode"];
     if (msalError)
     {
-        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[NSString stringWithFormat:@"Error creating MSAL configuration: %@", msalError]];
+        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[NSString stringWithFormat:@"Error creating MSAL configuration: %@", [msalError.userInfo objectForKey:@"MSALErrorDescriptionKey"]]];
     }
     else
     {
@@ -137,7 +134,7 @@
         account = [[self application] accountForIdentifier:accountId error:&error];
         if (error)
         {
-            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]];
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error.userInfo objectForKey:@"MSALErrorDescriptionKey"]];
             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
             return;
         }
@@ -225,7 +222,7 @@
         }
         else
         {
-            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]];
+            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error.userInfo objectForKey:@"MSALErrorDescriptionKey"]];
             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
         }
     }];
