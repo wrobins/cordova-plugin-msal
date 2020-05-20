@@ -54,8 +54,6 @@ public class MsalPlugin extends CordovaPlugin {
     private String accountMode;
     private String[] scopes;
 
-    private boolean loggerStarted;
-
     private static final String SIGN_IN_SILENT = "signInSilent";
     private static final String SIGN_IN_INTERACTIVE = "signInInteractive";
     private static final String SIGN_OUT = "signOut";
@@ -251,9 +249,19 @@ public class MsalPlugin extends CordovaPlugin {
                 public void log(String tag, Logger.LogLevel logLevel, String message, boolean containsPII) {
                     try {
                         JSONObject logEntry = new JSONObject();
+
+                        // Parse out the message object to make it cleaner.
+                        String meta = message.substring(message.indexOf("["), message.indexOf("]"));
+                        logEntry.put("timestamp", meta.substring(1, meta.indexOf(" -")));
+                        JSONObject data = new JSONObject(meta.substring(meta.indexOf("{"), meta.indexOf("}") + 1));
+                        logEntry.put("threadId", Integer.parseInt(data.getString("thread_id")));
+                        logEntry.put("correlationId", data.getString("correlation_id"));
+
                         logEntry.put("logLevel", logLevel.toString());
                         logEntry.put("containsPII", containsPII);
-                        logEntry.put("message", message);
+                        logEntry.put("message", message.substring(message.indexOf("]") + 2));
+
+
                         MsalPlugin.this.loggerPluginResult = new PluginResult(PluginResult.Status.OK, logEntry);
                         MsalPlugin.this.loggerPluginResult.setKeepCallback(true);
                         MsalPlugin.this.loggerCallbackContext.sendPluginResult(MsalPlugin.this.loggerPluginResult);
