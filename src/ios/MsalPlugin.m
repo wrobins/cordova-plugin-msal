@@ -73,10 +73,7 @@
         }
         if (err)
         {
-            NSDictionary *internal = [err userInfo];
-            NSNumber *ie = [internal objectForKey:@"MSALInternalErrorCodeKey"];
-            MSALInternalError internalError = ie;
-            result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[err localizedDescription]];
+            result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[err.userInfo objectForKey:@"MSALErrorDescriptionKey"]];
             [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
             return;
         }
@@ -89,141 +86,310 @@
     self.config = [[MSALPublicClientApplicationConfig alloc] initWithClientId:[self clientId] redirectUri:[NSString stringWithFormat:@"msauth.%@://auth", [[NSBundle mainBundle] bundleIdentifier]] authority:defaultAuthority];
     [self.config setKnownAuthorities:[[NSArray<MSALAuthority *> alloc] initWithArray:allAuthorities copyItems:YES]];
     [self.config setMultipleCloudsSupported:[options objectForKey:@"multipleCloudsSupported"] == [NSNumber numberWithBool:YES]];
+    if ([options objectForKey:@"brokerRedirectUri"] == [NSNumber numberWithBool:NO])
+    {
+        MSALGlobalConfig.brokerAvailability = MSALBrokeredAvailabilityNone;
+    }
     self.application = [[MSALPublicClientApplication alloc] initWithConfiguration:[self config] error:&msalError];
     self.scopes = [options objectForKey:@"scopes"];
     self.accountMode = [options objectForKey:@"accountMode"];
     if (msalError)
     {
-        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[NSString stringWithFormat:@"Error creating MSAL configuration: %@", msalError]];
+        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[NSString stringWithFormat:@"Error creating MSAL configuration: %@", [msalError.userInfo objectForKey:@"MSALErrorDescriptionKey"]]];
     }
     else
     {
         result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     }
+    self.isInit = YES;
     [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
 }
 
 - (void)getAccounts:(CDVInvokedUrlCommand *)command
 {
-    NSMutableArray<NSDictionary *> *accounts = [[NSMutableArray<NSDictionary *> alloc] init];
-    for (MSALAccount *account in [[self application] allAccounts:nil])
+    if (!self.isInit)
     {
-        [accounts addObject:@{ @"id" : [account identifier], @"username" : [account username]}];
+        CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No configuration has been set yet. Call msalInit() before calling this."];
+        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
     }
-    CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:accounts];
+    else
+    {
+        NSMutableArray<NSDictionary *> *accounts = [[NSMutableArray<NSDictionary *> alloc] init];
+        for (MSALAccount *account in [[self application] allAccounts:nil])
+        {
+            [accounts addObject:@{ @"id" : [account identifier], @"username" : [account username]}];
+        }
+        CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:accounts];
+        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+    }
+}
+
+- (void)startLogger:(CDVInvokedUrlCommand *)command
+{
+    CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+    [result setKeepCallbackAsBool:YES];
     [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+    
+    if ([command.arguments objectAtIndex:0] == [NSNumber numberWithBool:NO]) {
+        MSALGlobalConfig.loggerConfig.piiEnabled = NO;
+    }
+    else
+    {
+        MSALGlobalConfig.loggerConfig.piiEnabled = YES;
+    }
+    
+    if ([[command.arguments objectAtIndex:1] isEqualToString:@"ERROR"])
+    {
+        MSALGlobalConfig.loggerConfig.logLevel = MSALLogLevelError;
+    }
+    else if ([[command.arguments objectAtIndex:1] isEqualToString:@"WARNING"])
+    {
+        MSALGlobalConfig.loggerConfig.logLevel = MSALLogLevelWarning;
+    }
+    else if ([[command.arguments objectAtIndex:1] isEqualToString:@"INFO"])
+    {
+        MSALGlobalConfig.loggerConfig.logLevel = MSALLogLevelInfo;
+    }
+    else
+    {
+        MSALGlobalConfig.loggerConfig.logLevel = MSALLogLevelVerbose;
+    }
+    
+    [MSALGlobalConfig.loggerConfig setLogCallback:^(MSALLogLevel level, NSString * _Nullable message, BOOL containsPII) {
+        NSMutableDictionary *logEntry = [[NSMutableDictionary alloc] initWithCapacity:6];
+        NSCharacterSet *separators = [NSCharacterSet characterSetWithCharactersInString:@" []"];
+        NSArray *messageData = [message componentsSeparatedByCharactersInSet:separators];
+        @try
+        {
+            NSString *timestamp = [[[messageData objectAtIndex:7] stringByAppendingString:@" "] stringByAppendingString:[messageData objectAtIndex:8]];
+            NSInteger threadId = [[[[messageData objectAtIndex:0] componentsSeparatedByString:@"="] objectAtIndex:1] intValue];
+            NSString *correlationId;
+            NSString *logLevel;
+            if (level == MSALLogLevelInfo)
+            {
+                logLevel = @"INFO";
+            }
+            else if (level == MSALLogLevelWarning)
+            {
+                logLevel = @"WARNING";
+            }
+            else if (level == MSALLogLevelError)
+            {
+                logLevel = @"ERROR";
+            }
+            else
+            {
+                logLevel = @"VERBOSE";
+            }
+            NSString *messageText;
+            
+            // The MSAL Log Text can be in one of two formats which changes how we have to parse it out.
+            if ([[messageData objectAtIndex:9] isEqualToString:@"-"])
+            {
+                correlationId = [messageData objectAtIndex:10];
+                messageText = [[message componentsSeparatedByString:@"[MSAL] "] objectAtIndex:1];
+            }
+            else
+            {
+                correlationId = @"UNSET";
+                messageText = [[message componentsSeparatedByString:@"] "] objectAtIndex:1];
+            }
+            
+            [logEntry setValue:timestamp forKey:@"timestamp"];
+            [logEntry setValue:[NSNumber numberWithInteger:threadId] forKey:@"threadId"];
+            [logEntry setValue:correlationId forKey:@"correlationId"];
+            [logEntry setValue:logLevel forKey:@"logLevel"];
+            [logEntry setValue:[NSNumber numberWithBool:containsPII] forKey:@"containsPII"];
+            [logEntry setValue:messageText forKey:@"message"];
+            
+            CDVPluginResult *logUpdate = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:logEntry];
+            [logUpdate setKeepCallbackAsBool:YES];
+            [self.commandDelegate sendPluginResult:logUpdate callbackId:command.callbackId];
+        }
+        @catch (NSException *ex)
+        {
+            // If the format of this log message is weird, just ignore it
+        }
+    }];
 }
 
 - (void)signInSilent:(CDVInvokedUrlCommand*)command
 {
-    CDVPluginResult * pluginResult = nil;
-    NSError *error = nil;
-    NSArray *accounts = [[self application] allAccounts:nil];
-    if ([accounts count] == 0)
+    if (!self.isInit)
     {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No accounts found on device."];
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-        return;
-    }
-    MSALAccount *account = nil;
-    if ([self.accountMode isEqualToString:@"SINGLE"])
-    {
-        account = accounts[0];
+        CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No configuration has been set yet. Call msalInit() before calling this."];
+        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
     }
     else
     {
+        CDVPluginResult * pluginResult = nil;
         NSError *error = nil;
-        NSString *accountId = [command.arguments objectAtIndex:0];
-        account = [[self application] accountForIdentifier:accountId error:&error];
-        if (error)
+        NSArray *accounts = [[self application] allAccounts:nil];
+        if ([accounts count] == 0)
+        {
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No accounts found on device."];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            return;
+        }
+        MSALAccount *account = nil;
+        if ([self.accountMode isEqualToString:@"SINGLE"])
+        {
+            account = accounts[0];
+        }
+        else
+        {
+            NSError *error = nil;
+            NSString *accountId = [command.arguments objectAtIndex:0];
+            account = [[self application] accountForIdentifier:accountId error:&error];
+            if (error)
+            {
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error.userInfo objectForKey:@"MSALErrorDescriptionKey"]];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+                return;
+            }
+        }
+        if (!account)
         {
             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]];
             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
             return;
         }
-    }
-    if (!account)
-    {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]];
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-        return;
-    }
-        
-    MSALSilentTokenParameters *silentParams = [[MSALSilentTokenParameters alloc] initWithScopes:[self scopes] account:account];
-    [[self application] acquireTokenSilentWithParameters:silentParams completionBlock:^(MSALResult *result, NSError *error) {
-        if (!error)
-        {
-            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:result.accessToken];
-            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-        }
-        else
-        {
-            if ([error.domain isEqual:MSALErrorDomain] && error.code == MSALErrorInteractionRequired)
+            
+        MSALSilentTokenParameters *silentParams = [[MSALSilentTokenParameters alloc] initWithScopes:[self scopes] account:account];
+        [[self application] acquireTokenSilentWithParameters:silentParams completionBlock:^(MSALResult *result, NSError *error) {
+            if (!error)
             {
-                CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No account currently exists"];
+                CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:result.accessToken];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
             }
-                
-            // Other errors may require trying again later, or reporting authentication problems to the user
-        }
-    }];
+            else
+            {
+                if ([error.domain isEqual:MSALErrorDomain] && error.code == MSALErrorInteractionRequired)
+                {
+                    CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No account currently exists"];
+                    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+                }
+                    
+                // Other errors may require trying again later, or reporting authentication problems to the user
+            }
+        }];
+    }
 }
 
 - (void)signInInteractive:(CDVInvokedUrlCommand*)command
 {
-    MSALWebviewParameters *webParameters = [[MSALWebviewParameters alloc] initWithParentViewController:[self viewController]];
+    if (!self.isInit)
+    {
+        CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No configuration has been set yet. Call msalInit() before calling this."];
+        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+    }
+    else
+    {
+        MSALWebviewParameters *webParameters = [[MSALWebviewParameters alloc] initWithParentViewController:[self viewController]];
 
-    MSALInteractiveTokenParameters *interactiveParams = [[MSALInteractiveTokenParameters alloc] initWithScopes:[self scopes] webviewParameters:webParameters];
-    [[self application] acquireTokenWithParameters:interactiveParams completionBlock:^(MSALResult *result, NSError *error) {
-        if (!error)
+        MSALInteractiveTokenParameters *interactiveParams = [[MSALInteractiveTokenParameters alloc] initWithScopes:[self scopes] webviewParameters:webParameters];
+        
+        NSError *err = nil;
+        CDVPluginResult *result = nil;
+        
+        NSString *loginHint = (NSString *)[command.arguments objectAtIndex:0];
+        NSString *prompt = (NSString *)[command.arguments objectAtIndex:1];
+        
+        if (err)
         {
-            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:result.accessToken];
-            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[NSString stringWithFormat:@"Error parsing options object: %@", err]];
+            [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+            return;
         }
-        else
+        
+        if (![loginHint isEqual:[NSNull null]])
         {
-            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]];
-            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            interactiveParams.loginHint = loginHint;
         }
-    }];
+        
+        if (![prompt isEqual:[NSNull null]]) {
+            if ([prompt isEqualToString:@"SELECT_ACCOUNT"])
+            {
+                interactiveParams.promptType = MSALPromptTypeSelectAccount;
+            }
+            if ([prompt isEqualToString:@"LOGIN"])
+            {
+                interactiveParams.promptType = MSALPromptTypeLogin;
+            }
+            if ([prompt isEqualToString:@"CONSENT"])
+            {
+                interactiveParams.promptType = MSALPromptTypeConsent;
+            }
+        }
+        
+        NSArray *queryStrings = [command.arguments objectAtIndex:2];
+        NSMutableDictionary *extraQueryParameers = [[NSMutableDictionary alloc] init];
+        for (NSDictionary *queryString in queryStrings)
+        {
+            [extraQueryParameers setObject:[queryString objectForKey:@"value"] forKey:[queryString objectForKey:@"param"]];
+        }
+        interactiveParams.extraQueryParameters = [[NSDictionary alloc] initWithDictionary:extraQueryParameers];
+        interactiveParams.extraScopesToConsent = [command.arguments objectAtIndex:3];;
+        
+        [[self application] acquireTokenWithParameters:interactiveParams completionBlock:^(MSALResult *result, NSError *error) {
+            if (!error)
+            {
+                CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:result.accessToken];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            }
+            else
+            {
+                CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error.userInfo objectForKey:@"MSALErrorDescriptionKey"]];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            }
+        }];
+    }
 }
 
 - (void)signOut:(CDVInvokedUrlCommand*)command
 {
-    CDVPluginResult* pluginResult = nil;
-    NSError *error = nil;
-    NSArray *accounts = [[self application] allAccounts:nil];
-    if ([accounts count] == 0)
+    if (!self.isInit)
     {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-        return;
-    }
-    MSALAccount *account = nil;
-    if ([self.accountMode isEqualToString:@"SINGLE"])
-    {
-        account = accounts[0];
+        CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No configuration has been set yet. Call msalInit() before calling this."];
+        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
     }
     else
     {
+        CDVPluginResult* pluginResult = nil;
         NSError *error = nil;
-        NSString *accountId = [command.arguments objectAtIndex:0];
-        account = [[self application] accountForIdentifier:accountId error:&error];
-        if (error)
+        NSArray *accounts = [[self application] allAccounts:nil];
+        if ([accounts count] == 0)
         {
-            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]];
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
             return;
         }
+        MSALAccount *account = nil;
+        if ([self.accountMode isEqualToString:@"SINGLE"])
+        {
+            account = accounts[0];
+        }
+        else
+        {
+            NSError *error = nil;
+            NSString *accountId = [command.arguments objectAtIndex:0];
+            account = [[self application] accountForIdentifier:accountId error:&error];
+            if (error)
+            {
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+                return;
+            }
+        }
+        if ([[self application] removeAccount:account error:&error]) {
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+        }
+        else
+        {
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]];
+        }
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }
-    if ([[self application] removeAccount:account error:&error]) {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-    }
-    else
-    {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]];
-    }
-    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
 @end

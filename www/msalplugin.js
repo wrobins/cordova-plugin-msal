@@ -19,26 +19,29 @@ module.exports = {
         if (!options) {
             options = defaultOptions;
         } else {
-            if (typeof(options.authorities) == "undefined") {
+            if (typeof(options.authorities) == 'undefined') {
                 options.authorities = defaultOptions.authorities;
             }
-            if (typeof(options.authorizationUserAgent) == "undefined") {
+            if (typeof(options.authorizationUserAgent) == 'undefined') {
                 options.authorizationUserAgent = defaultOptions.authorizationUserAgent;
             }
-            if (typeof(options.multipleCloudsSupported) == "undefined") {
+            if (typeof(options.multipleCloudsSupported) == 'undefined') {
                 options.multipleCloudsSupported = defaultOptions.multipleCloudsSupported;
             }
-            if (typeof(options.brokerRedirectUri) == "undefined") {
+            if (typeof(options.brokerRedirectUri) == 'undefined') {
                 options.brokerRedirectUri = defaultOptions.brokerRedirectUri;
             }
-            if (typeof(options.accountMode) == "undefined") {
+            if (typeof(options.accountMode) == 'undefined') {
                 options.accountMode = defaultOptions.accountMode;
             }
-            if (typeof(options.scopes) == "undefined") {
+            if (typeof(options.scopes) == 'undefined') {
                 options.scopes = defaultOptions.scopes;
             }
         }
         cordova.exec(successCallback, errorCallback, 'MsalPlugin', 'msalInit', [JSON.stringify(options)]);
+    },
+    startLogger: function(updateCallback, errorCallback, containsPII = false, logLevel = 'VERBOSE') {
+        cordova.exec(updateCallback, errorCallback, 'MsalPlugin', 'startLogger', [containsPII, logLevel]);
     },
     getAccounts: function(successCallback, errorCallback) {
         cordova.exec(successCallback, errorCallback, 'MsalPlugin', 'getAccounts', []);
@@ -46,11 +49,19 @@ module.exports = {
     signInSilent: function(successCallback, errorCallback, account) {
         cordova.exec(successCallback, errorCallback, 'MsalPlugin', 'signInSilent', [account]);
     },
-    signInInteractive: function(successCallback, errorCallback) {
-        cordova.exec(successCallback, errorCallback, 'MsalPlugin', 'signInInteractive', []);
+    signInInteractive: function(successCallback, errorCallback, signInOptions) {
+        if (typeof(signInOptions) === 'undefined') {
+            signInOptions = {};
+        }
+        var opts = [
+            typeof(signInOptions.loginHint !== 'undefined') ? signInOptions.loginHint : '',
+            typeof(signInOptions.prompt !== 'undefined') ? signInOptions.prompt : '',
+            typeof(signInOptions.authorizationQueryStringParameters) !== 'undefined' ? signInOptions.authorizationQueryStringParameters : [],
+            typeof(signInOptions.otherScopesToAuthorize) !== 'undefined' ? signInOptions.otherScopesToAuthorize : []
+        ];
+        cordova.exec(successCallback, errorCallback, 'MsalPlugin', 'signInInteractive', opts);
     },
     signOut: function(successCallback, errorCallback, account) {
         cordova.exec(successCallback, errorCallback, 'MsalPlugin', 'signOut', [account]);
     }
 };
-  

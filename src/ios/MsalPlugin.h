@@ -9,8 +9,10 @@
 @property NSString *clientId;
 @property NSString *tenantId;
 @property NSString *accountMode;
+@property BOOL isInit;
 
 - (void)msalInit:(CDVInvokedUrlCommand*)command;
+- (void)startLogger:(CDVInvokedUrlCommand*)command;
 - (void)getAccounts:(CDVInvokedUrlCommand*)command;
 - (void)signInSilent:(CDVInvokedUrlCommand*)command;
 - (void)signInInteractive:(CDVInvokedUrlCommand*)command;
