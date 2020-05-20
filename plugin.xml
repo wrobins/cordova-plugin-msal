@@ -85,6 +85,14 @@
                 <param name="ios-package" value="MSALError" />
             </feature>
         </config-file>
+        <podspec>
+            <config>
+                <source url="https://github.com/CocoaPods/Specs.git"/>
+            </config>
+            <pods use_frameworks="true">
+                <pod name="MSAL" />
+            </pods>
+        </podspec>
         <config-file target="*-Info.plist" parent="CFBundleURLTypes">
             <array>
                 <dict>
@@ -115,6 +123,5 @@
         <header-file src="src/ios/AppDelegate+MsalCallback.h" />
         <source-file src="src/ios/MsalPlugin.m" />
         <source-file src="src/ios/AppDelegate+MsalCallback.m" />
-        <framework src="src/ios/MSAL.framework" embed="true" custom="true" />
     </platform>
 </plugin>
