@@ -1,6 +1,6 @@
 {
     "name": "cordova-plugin-msal",
-    "version": "2.1.2",
+    "version": "2.3.0",
     "description": "A Cordova plugin providing a wrapper for Microsoft's MSAL library for Android and iOS.",
     "cordova": {
       "id": "cordova-plugin-msal",
