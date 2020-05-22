@@ -376,17 +376,19 @@ public class MsalPlugin extends CordovaPlugin {
                 @Override
                 public void run() {
                     try {
-                        // Look for account first so we don't error out for one that doesn't exist
-                        boolean found = false;
-                        for (IAccount search: MsalPlugin.this.appMultipleClient.getAccounts()) {
-                            if (search.getId().equals(account)) {
-                                found = true;
-                                break;
+                        // Look for account first so we don't error out for one that doesn't exist                        
+                        if(MsalPlugin.this.appMultipleClient != null) {
+                            boolean found = false;
+                            for (IAccount search: MsalPlugin.this.appMultipleClient.getAccounts()) {
+                                if (search.getId().equals(account)) {
+                                    found = true;
+                                    break;
+                                }
                             }
-                        }
-                        if (!found) {
-                            MsalPlugin.this.callbackContext.error("Account not found");
-                            return;
+                            if (!found) {
+                                MsalPlugin.this.callbackContext.error("Account not found");
+                                return;
+                            }
                         }
                         if(MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount() != null) {
                             MsalPlugin.this.appSingleClient.signOut(new ISingleAccountPublicClientApplication.SignOutCallback() {
