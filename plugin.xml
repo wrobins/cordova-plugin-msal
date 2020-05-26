@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
-        id="cordova-plugin-msal" version="2.1.2">
+        id="cordova-plugin-msal" version="2.3.0">
     <name>Cordova MSAL Plugin</name>
     <description>A Cordova plugin providing a wrapper for Microsoft's MSAL library for Android and iOS.</description>
     <author>Walter Robins</author>
@@ -85,6 +85,14 @@
                 <param name="ios-package" value="MSALError" />
             </feature>
         </config-file>
+        <podspec>
+            <config>
+                <source url="https://github.com/CocoaPods/Specs.git"/>
+            </config>
+            <pods use_frameworks="true">
+                <pod name="MSAL" />
+            </pods>
+        </podspec>
         <config-file target="*-Info.plist" parent="CFBundleURLTypes">
             <array>
                 <dict>
@@ -115,6 +123,5 @@
         <header-file src="src/ios/AppDelegate+MsalCallback.h" />
         <source-file src="src/ios/MsalPlugin.m" />
         <source-file src="src/ios/AppDelegate+MsalCallback.m" />
-        <framework src="src/ios/MSAL.framework" embed="true" custom="true" />
     </platform>
 </plugin>

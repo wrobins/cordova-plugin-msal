@@ -5,6 +5,7 @@ import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 
+import org.apache.cordova.PluginResult;
 import org.json.JSONException;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -27,8 +28,10 @@ import com.microsoft.identity.client.AcquireTokenParameters;
 import com.microsoft.identity.client.AuthenticationCallback;
 import com.microsoft.identity.client.IAccount;
 import com.microsoft.identity.client.IAuthenticationResult;
+import com.microsoft.identity.client.ILoggerCallback;
 import com.microsoft.identity.client.IMultipleAccountPublicClientApplication;
 import com.microsoft.identity.client.ISingleAccountPublicClientApplication;
+import com.microsoft.identity.client.Logger;
 import com.microsoft.identity.client.Prompt;
 import com.microsoft.identity.client.PublicClientApplication;
 import com.microsoft.identity.client.MultipleAccountPublicClientApplication;
@@ -39,6 +42,8 @@ public class MsalPlugin extends CordovaPlugin {
     private Activity activity;
     private Context context;
     private CallbackContext callbackContext;
+    private CallbackContext loggerCallbackContext;
+    private PluginResult loggerPluginResult;
     private ISingleAccountPublicClientApplication appSingleClient;
     private IMultipleAccountPublicClientApplication appMultipleClient;
     private boolean isInit = false;
@@ -54,6 +59,7 @@ public class MsalPlugin extends CordovaPlugin {
     private static final String SIGN_OUT = "signOut";
     private static final String MSAL_INIT = "msalInit";
     private static final String GET_ACCOUNTS = "getAccounts";
+    private static final String START_LOGGER = "startLogger";
 
     private static final String SINGLE_ACCOUNT = "SINGLE";
     private static final String MULTIPLE_ACCOUNTS = "MULTIPLE";
@@ -74,11 +80,33 @@ public class MsalPlugin extends CordovaPlugin {
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
-        this.callbackContext = callbackContext;
+        // We need a special callback context for the logger to keep continuous updates
+        // without interfering with other plugin operations.
+        if (!START_LOGGER.equals(action)) {
+            this.callbackContext = callbackContext;
+        }
 
         try {
             if (MSAL_INIT.equals(action)) {
                 this.msalInit(new JSONObject(args.getString(0)));
+            }
+            if (START_LOGGER.equals(action)) {
+                this.loggerCallbackContext = callbackContext;
+                Logger.LogLevel logLevel;
+                switch (args.getString(1)) {
+                    case "ERROR":
+                        logLevel = Logger.LogLevel.ERROR;
+                        break;
+                    case "WARNING":
+                        logLevel = Logger.LogLevel.WARNING;
+                        break;
+                    case "INFO":
+                        logLevel = Logger.LogLevel.INFO;
+                        break;
+                    default:
+                        logLevel = Logger.LogLevel.VERBOSE;
+                }
+                this.startLogger(args.getBoolean(0), logLevel);
             }
             if (GET_ACCOUNTS.equals(action)) {
                 this.getAccounts();
@@ -207,165 +235,208 @@ public class MsalPlugin extends CordovaPlugin {
         });
     }
 
-    private void getAccounts() throws JSONException {
-        this.checkConfigInit();
-        cordova.getThreadPool().execute(new Runnable() {
-            @Override
-            public void run() {
-                JSONArray accounts = new JSONArray();
-                try {
-                    if (SINGLE_ACCOUNT.equals(accountMode)) {
-                        if (MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount() == null) {
-                            MsalPlugin.this.callbackContext.error("No account currently exists");
-                        } else {
-                            accounts.put(MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount().getId());
-                        }
-                    } else {
-                        for (IAccount account: MsalPlugin.this.appMultipleClient.getAccounts()) {
-                            JSONObject accountObj = new JSONObject();
-                            accountObj.put("id", account.getId());
-                            accountObj.put("username", account.getUsername());
-                            accounts.put(accountObj);
-                        }
-                    }
-                    MsalPlugin.this.callbackContext.success(accounts);
-                } catch (InterruptedException e) {
-                    MsalPlugin.this.callbackContext.error(e.getMessage());
-                } catch (MsalException e) {
-                    MsalPlugin.this.callbackContext.error(e.getMessage());
-                } catch (JSONException e) {
-                    MsalPlugin.this.callbackContext.error(e.getMessage());
-                }
-            }
-        });
-    }
-
-    private void signinUserSilent(final String account) {
-        this.checkConfigInit();
-        if (SINGLE_ACCOUNT.equals(accountMode)) {
-            cordova.getThreadPool().execute(new Runnable() {
+    private void startLogger(boolean showPII, Logger.LogLevel logLevel) {
+        // Set up a dedicated callback context to handler multiple log entries until we way to stop
+        this.loggerPluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
+        this.loggerPluginResult.setKeepCallback(true);
+        this.loggerCallbackContext.sendPluginResult(this.loggerPluginResult);
+        try {
+            // Set up the logger with the options we want
+            Logger.getInstance().setEnablePII(showPII);
+            Logger.getInstance().setLogLevel(logLevel);
+            Logger.getInstance().setExternalLogger(new ILoggerCallback() {
                 @Override
-                public void run() {
+                public void log(String tag, Logger.LogLevel logLevel, String message, boolean containsPII) {
                     try {
-                        String authority = MsalPlugin.this.appSingleClient.getConfiguration().getDefaultAuthority().getAuthorityURL().toString();
-                        if (MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount() == null) {
-                            MsalPlugin.this.callbackContext.error("No account currently exists");
-                        } else {
-                            IAuthenticationResult silentAuthResult = MsalPlugin.this.appSingleClient.acquireTokenSilent(MsalPlugin.this.scopes, authority);
-                            MsalPlugin.this.callbackContext.success(silentAuthResult.getAccessToken());
-                        }
-                    } catch (InterruptedException e) {
-                        MsalPlugin.this.callbackContext.error(e.getMessage());
-                    } catch (MsalException e) {
-                        MsalPlugin.this.callbackContext.error(e.getMessage());
+                        JSONObject logEntry = new JSONObject();
+
+                        // Parse out the message object to make it cleaner.
+                        String meta = message.substring(message.indexOf("["), message.indexOf("]"));
+                        logEntry.put("timestamp", meta.substring(1, meta.indexOf(" -")));
+                        JSONObject data = new JSONObject(meta.substring(meta.indexOf("{"), meta.indexOf("}") + 1));
+                        logEntry.put("threadId", Integer.parseInt(data.getString("thread_id")));
+                        logEntry.put("correlationId", data.getString("correlation_id"));
+
+                        logEntry.put("logLevel", logLevel.toString());
+                        logEntry.put("containsPII", containsPII);
+                        logEntry.put("message", message.substring(message.indexOf("]") + 2));
+
+
+                        MsalPlugin.this.loggerPluginResult = new PluginResult(PluginResult.Status.OK, logEntry);
+                        MsalPlugin.this.loggerPluginResult.setKeepCallback(true);
+                        MsalPlugin.this.loggerCallbackContext.sendPluginResult(MsalPlugin.this.loggerPluginResult);
+                    } catch (JSONException e) {
+                        MsalPlugin.this.loggerCallbackContext.error(e.getMessage());
                     }
                 }
             });
-        } else {
+        } catch (IllegalStateException e) {
+            MsalPlugin.this.loggerCallbackContext.error(e.getMessage());
+        }
+
+    }
+
+    private void getAccounts() throws JSONException {
+        if (this.checkConfigInit()) {
             cordova.getThreadPool().execute(new Runnable() {
                 @Override
                 public void run() {
+                    JSONArray accounts = new JSONArray();
                     try {
-                        // Look for account first so we don't error out for one that doesn't exist
-                        boolean found = false;
-                        for (IAccount search: MsalPlugin.this.appMultipleClient.getAccounts()) {
-                            if (search.getId().equals(account)) {
-                                found = true;
-                                break;
+                        if (SINGLE_ACCOUNT.equals(accountMode)) {
+                            if (MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount() == null) {
+                                MsalPlugin.this.callbackContext.error("No account currently exists");
+                            } else {
+                                accounts.put(MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount().getId());
+                            }
+                        } else {
+                            for (IAccount account : MsalPlugin.this.appMultipleClient.getAccounts()) {
+                                JSONObject accountObj = new JSONObject();
+                                accountObj.put("id", account.getId());
+                                accountObj.put("username", account.getUsername());
+                                accounts.put(accountObj);
                             }
                         }
-                        if (!found) {
-                            MsalPlugin.this.callbackContext.error("Account not found");
-                            return;
-                        }
-                        String authority = MsalPlugin.this.appMultipleClient.getConfiguration().getDefaultAuthority().getAuthorityURL().toString();
-                        IAuthenticationResult result = MsalPlugin.this.appMultipleClient.acquireTokenSilent(
-                                MsalPlugin.this.scopes,
-                                MsalPlugin.this.appMultipleClient.getAccount(account),
-                                authority
-                                );
-                        MsalPlugin.this.callbackContext.success(result.getAccessToken());
+                        MsalPlugin.this.callbackContext.success(accounts);
                     } catch (InterruptedException e) {
                         MsalPlugin.this.callbackContext.error(e.getMessage());
                     } catch (MsalException e) {
+                        MsalPlugin.this.callbackContext.error(e.getMessage());
+                    } catch (JSONException e) {
                         MsalPlugin.this.callbackContext.error(e.getMessage());
                     }
                 }
             });
         }
+    }
 
+    private void signinUserSilent(final String account) {
+        if (this.checkConfigInit()) {
+            if (SINGLE_ACCOUNT.equals(accountMode)) {
+                cordova.getThreadPool().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            String authority = MsalPlugin.this.appSingleClient.getConfiguration().getDefaultAuthority().getAuthorityURL().toString();
+                            if (MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount() == null) {
+                                MsalPlugin.this.callbackContext.error("No account currently exists");
+                            } else {
+                                IAuthenticationResult silentAuthResult = MsalPlugin.this.appSingleClient.acquireTokenSilent(MsalPlugin.this.scopes, authority);
+                                MsalPlugin.this.callbackContext.success(silentAuthResult.getAccessToken());
+                            }
+                        } catch (InterruptedException e) {
+                            MsalPlugin.this.callbackContext.error(e.getMessage());
+                        } catch (MsalException e) {
+                            MsalPlugin.this.callbackContext.error(e.getMessage());
+                        }
+                    }
+                });
+            } else {
+                cordova.getThreadPool().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            // Look for account first so we don't error out for one that doesn't exist
+                            boolean found = false;
+                            for (IAccount search : MsalPlugin.this.appMultipleClient.getAccounts()) {
+                                if (search.getId().equals(account)) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                MsalPlugin.this.callbackContext.error("Account not found");
+                                return;
+                            }
+                            String authority = MsalPlugin.this.appMultipleClient.getConfiguration().getDefaultAuthority().getAuthorityURL().toString();
+                            IAuthenticationResult result = MsalPlugin.this.appMultipleClient.acquireTokenSilent(
+                                    MsalPlugin.this.scopes,
+                                    MsalPlugin.this.appMultipleClient.getAccount(account),
+                                    authority
+                            );
+                            MsalPlugin.this.callbackContext.success(result.getAccessToken());
+                        } catch (InterruptedException e) {
+                            MsalPlugin.this.callbackContext.error(e.getMessage());
+                        } catch (MsalException e) {
+                            MsalPlugin.this.callbackContext.error(e.getMessage());
+                        }
+                    }
+                });
+            }
+        }
     }
 
     private void signinUserInteractive(final String loginHint, final List<Pair<String, String>> authorizationQueryStringParameters, final Prompt prompt, final String[] otherScopesToAuthorize) {
-        this.checkConfigInit();
-        if (this.SINGLE_ACCOUNT.equals(this.accountMode)) {
-            cordova.getThreadPool().execute(new Runnable() {
-                @Override
-                public void run() {
-                    AcquireTokenParameters.Builder params = new AcquireTokenParameters.Builder()
-                            .startAuthorizationFromActivity(MsalPlugin.this.activity)
-                            .withScopes(Arrays.asList(MsalPlugin.this.scopes))
-                            .withOtherScopesToAuthorize(Arrays.asList(otherScopesToAuthorize))
-                            .withPrompt(prompt)
-                            .withCallback(new AuthenticationCallback() {
-                                @Override
-                                public void onCancel() {
-                                    MsalPlugin.this.callbackContext.error("Login cancelled.");
-                                }
+        if (this.checkConfigInit()) {
+            if (this.SINGLE_ACCOUNT.equals(this.accountMode)) {
+                cordova.getThreadPool().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        AcquireTokenParameters.Builder params = new AcquireTokenParameters.Builder()
+                                .startAuthorizationFromActivity(MsalPlugin.this.activity)
+                                .withScopes(Arrays.asList(MsalPlugin.this.scopes))
+                                .withOtherScopesToAuthorize(Arrays.asList(otherScopesToAuthorize))
+                                .withPrompt(prompt)
+                                .withCallback(new AuthenticationCallback() {
+                                    @Override
+                                    public void onCancel() {
+                                        MsalPlugin.this.callbackContext.error("Login cancelled.");
+                                    }
 
-                                @Override
-                                public void onSuccess(IAuthenticationResult iAuthenticationResult) {
-                                    MsalPlugin.this.callbackContext.success(iAuthenticationResult.getAccessToken());
-                                }
+                                    @Override
+                                    public void onSuccess(IAuthenticationResult iAuthenticationResult) {
+                                        MsalPlugin.this.callbackContext.success(iAuthenticationResult.getAccessToken());
+                                    }
 
-                                @Override
-                                public void onError(MsalException e) {
-                                    MsalPlugin.this.callbackContext.error(e.getMessage());
-                                }
-                            });
-                    if (!loginHint.equals("")) {
-                        params = params.withLoginHint(loginHint);
+                                    @Override
+                                    public void onError(MsalException e) {
+                                        MsalPlugin.this.callbackContext.error(e.getMessage());
+                                    }
+                                });
+                        if (!loginHint.equals("")) {
+                            params = params.withLoginHint(loginHint);
+                        }
+                        if (!authorizationQueryStringParameters.isEmpty()) {
+                            params = params.withAuthorizationQueryStringParameters(authorizationQueryStringParameters);
+                        }
+                        MsalPlugin.this.appSingleClient.acquireToken(params.build());
                     }
-                    if (!authorizationQueryStringParameters.isEmpty()) {
-                        params = params.withAuthorizationQueryStringParameters(authorizationQueryStringParameters);
-                    }
-                    MsalPlugin.this.appSingleClient.acquireToken(params.build());
-                }
-            });
-        } else {
-            cordova.getThreadPool().execute(new Runnable() {
-                @Override
-                public void run() {
-                    AcquireTokenParameters.Builder params = new AcquireTokenParameters.Builder()
-                            .startAuthorizationFromActivity(MsalPlugin.this.activity)
-                            .withScopes(Arrays.asList(MsalPlugin.this.scopes))
-                            .withOtherScopesToAuthorize(Arrays.asList(otherScopesToAuthorize))
-                            .withPrompt(prompt)
-                            .withCallback(new AuthenticationCallback() {
-                                @Override
-                                public void onCancel() {
-                                    MsalPlugin.this.callbackContext.error("Login cancelled.");
-                                }
+                });
+            } else {
+                cordova.getThreadPool().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        AcquireTokenParameters.Builder params = new AcquireTokenParameters.Builder()
+                                .startAuthorizationFromActivity(MsalPlugin.this.activity)
+                                .withScopes(Arrays.asList(MsalPlugin.this.scopes))
+                                .withOtherScopesToAuthorize(Arrays.asList(otherScopesToAuthorize))
+                                .withPrompt(prompt)
+                                .withCallback(new AuthenticationCallback() {
+                                    @Override
+                                    public void onCancel() {
+                                        MsalPlugin.this.callbackContext.error("Login cancelled.");
+                                    }
 
-                                @Override
-                                public void onSuccess(IAuthenticationResult iAuthenticationResult) {
-                                    MsalPlugin.this.callbackContext.success(iAuthenticationResult.getAccessToken());
-                                }
+                                    @Override
+                                    public void onSuccess(IAuthenticationResult iAuthenticationResult) {
+                                        MsalPlugin.this.callbackContext.success(iAuthenticationResult.getAccessToken());
+                                    }
 
-                                @Override
-                                public void onError(MsalException e) {
-                                    MsalPlugin.this.callbackContext.error(e.getMessage());
-                                }
-                            });
-                    if (!loginHint.equals("")) {
-                        params = params.withLoginHint(loginHint);
+                                    @Override
+                                    public void onError(MsalException e) {
+                                        MsalPlugin.this.callbackContext.error(e.getMessage());
+                                    }
+                                });
+                        if (!loginHint.equals("")) {
+                            params = params.withLoginHint(loginHint);
+                        }
+                        if (!authorizationQueryStringParameters.isEmpty()) {
+                            params = params.withAuthorizationQueryStringParameters(authorizationQueryStringParameters);
+                        }
+                        MsalPlugin.this.appMultipleClient.acquireToken(params.build());
                     }
-                    if (!authorizationQueryStringParameters.isEmpty()) {
-                        params = params.withAuthorizationQueryStringParameters(authorizationQueryStringParameters);
-                    }
-                    MsalPlugin.this.appMultipleClient.acquireToken(params.build());
-                }
-            });
+                });
+            }
         }
     }
 
@@ -376,66 +447,67 @@ public class MsalPlugin extends CordovaPlugin {
                 @Override
                 public void run() {
                     try {
-                        // Look for account first so we don't error out for one that doesn't exist                        
-                        if(MsalPlugin.this.appMultipleClient != null) {
-                            boolean found = false;
-                            for (IAccount search: MsalPlugin.this.appMultipleClient.getAccounts()) {
-                                if (search.getId().equals(account)) {
-                                    found = true;
-                                    break;
+                            // Look for account first so we don't error out for one that doesn't exist
+                            if(MsalPlugin.this.appMultipleClient != null) {
+                                boolean found = false;
+                                for (IAccount search : MsalPlugin.this.appMultipleClient.getAccounts()) {
+                                    if (search.getId().equals(account)) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if (!found) {
+                                    MsalPlugin.this.callbackContext.error("Account not found");
+                                    return;
                                 }
                             }
-                            if (!found) {
-                                MsalPlugin.this.callbackContext.error("Account not found");
-                                return;
-                            }
-                        }
-                        if(MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount() != null) {
-                            MsalPlugin.this.appSingleClient.signOut(new ISingleAccountPublicClientApplication.SignOutCallback() {
-                                @Override
-                                public void onSignOut() {
-                                    MsalPlugin.this.callbackContext.success();
-                                }
+                            if (MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount() != null) {
+                                MsalPlugin.this.appSingleClient.signOut(new ISingleAccountPublicClientApplication.SignOutCallback() {
+                                    @Override
+                                    public void onSignOut() {
+                                        MsalPlugin.this.callbackContext.success();
+                                    }
 
-                                @Override
-                                public void onError(MsalException e) {
-                                    MsalPlugin.this.callbackContext.error(e.getMessage());
-                                }
-                            });
-                        } else {
-                            MsalPlugin.this.callbackContext.success();
-                        }
-                    } catch (InterruptedException e) {
-                        MsalPlugin.this.callbackContext.error(e.getMessage());
-                    } catch (MsalException e) {
-                        MsalPlugin.this.callbackContext.error(e.getMessage());
-                    }
-                }
-            });
-        } else {
-            cordova.getThreadPool().execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        MsalPlugin.this.appMultipleClient.removeAccount(MsalPlugin.this.appMultipleClient.getAccount(account),
-                                new IMultipleAccountPublicClientApplication.RemoveAccountCallback() {
-                            @Override
-                            public void onRemoved() {
+                                    @Override
+                                    public void onError(MsalException e) {
+                                        MsalPlugin.this.callbackContext.error(e.getMessage());
+                                    }
+                                });
+                            } else {
                                 MsalPlugin.this.callbackContext.success();
                             }
-
-                            @Override
-                            public void onError(MsalException e) {
-                                MsalPlugin.this.callbackContext.error(e.getMessage());
-                            }
-                        });
-                    } catch (InterruptedException e) {
-                        MsalPlugin.this.callbackContext.error(e.getMessage());
-                    } catch (MsalException e) {
-                        MsalPlugin.this.callbackContext.error(e.getMessage());
+                        } catch (InterruptedException e) {
+                            MsalPlugin.this.callbackContext.error(e.getMessage());
+                        } catch (MsalException e) {
+                            MsalPlugin.this.callbackContext.error(e.getMessage());
+                        }
                     }
-                }
-            });
+                });
+            } else {
+                cordova.getThreadPool().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            MsalPlugin.this.appMultipleClient.removeAccount(MsalPlugin.this.appMultipleClient.getAccount(account),
+                                    new IMultipleAccountPublicClientApplication.RemoveAccountCallback() {
+                                        @Override
+                                        public void onRemoved() {
+                                            MsalPlugin.this.callbackContext.success();
+                                        }
+
+                                        @Override
+                                        public void onError(MsalException e) {
+                                            MsalPlugin.this.callbackContext.error(e.getMessage());
+                                        }
+                                    });
+                        } catch (InterruptedException e) {
+                            MsalPlugin.this.callbackContext.error(e.getMessage());
+                        } catch (MsalException e) {
+                            MsalPlugin.this.callbackContext.error(e.getMessage());
+                        }
+                    }
+                });
+            }
         }
     }
 
@@ -453,9 +525,11 @@ public class MsalPlugin extends CordovaPlugin {
         return config;
     }
 
-    private void checkConfigInit() {
+    private boolean checkConfigInit() {
         if (!this.isInit) {
             this.callbackContext.error("No configuration has been set yet. Call msalInit() before calling this.");
+            return false;
         }
+        return true;
     }
 }
