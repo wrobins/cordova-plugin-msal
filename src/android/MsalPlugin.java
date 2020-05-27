@@ -447,24 +447,51 @@ public class MsalPlugin extends CordovaPlugin {
                 @Override
                 public void run() {
                     try {
-                            // Look for account first so we don't error out for one that doesn't exist
-                            if(MsalPlugin.this.appMultipleClient != null) {
-                                boolean found = false;
-                                for (IAccount search : MsalPlugin.this.appMultipleClient.getAccounts()) {
-                                    if (search.getId().equals(account)) {
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                if (!found) {
-                                    MsalPlugin.this.callbackContext.error("Account not found");
-                                    return;
+                        // Look for account first so we don't error out for one that doesn't exist
+                        if(MsalPlugin.this.appMultipleClient != null) {
+                            boolean found = false;
+                            for (IAccount search : MsalPlugin.this.appMultipleClient.getAccounts()) {
+                                if (search.getId().equals(account)) {
+                                    found = true;
+                                    break;
                                 }
                             }
-                            if (MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount() != null) {
-                                MsalPlugin.this.appSingleClient.signOut(new ISingleAccountPublicClientApplication.SignOutCallback() {
+                            if (!found) {
+                                MsalPlugin.this.callbackContext.error("Account not found");
+                                return;
+                            }
+                        }
+                        if (MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount() != null) {
+                            MsalPlugin.this.appSingleClient.signOut(new ISingleAccountPublicClientApplication.SignOutCallback() {
+                                @Override
+                                public void onSignOut() {
+                                    MsalPlugin.this.callbackContext.success();
+                                }
+
+                                @Override
+                                public void onError(MsalException e) {
+                                    MsalPlugin.this.callbackContext.error(e.getMessage());
+                                }
+                            });
+                        } else {
+                            MsalPlugin.this.callbackContext.success();
+                        }
+                    } catch (InterruptedException e) {
+                        MsalPlugin.this.callbackContext.error(e.getMessage());
+                    } catch (MsalException e) {
+                        MsalPlugin.this.callbackContext.error(e.getMessage());
+                    }
+                }
+            });
+        } else {
+            cordova.getThreadPool().execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        MsalPlugin.this.appMultipleClient.removeAccount(MsalPlugin.this.appMultipleClient.getAccount(account),
+                                new IMultipleAccountPublicClientApplication.RemoveAccountCallback() {
                                     @Override
-                                    public void onSignOut() {
+                                    public void onRemoved() {
                                         MsalPlugin.this.callbackContext.success();
                                     }
 
@@ -473,41 +500,13 @@ public class MsalPlugin extends CordovaPlugin {
                                         MsalPlugin.this.callbackContext.error(e.getMessage());
                                     }
                                 });
-                            } else {
-                                MsalPlugin.this.callbackContext.success();
-                            }
-                        } catch (InterruptedException e) {
-                            MsalPlugin.this.callbackContext.error(e.getMessage());
-                        } catch (MsalException e) {
-                            MsalPlugin.this.callbackContext.error(e.getMessage());
-                        }
+                    } catch (InterruptedException e) {
+                        MsalPlugin.this.callbackContext.error(e.getMessage());
+                    } catch (MsalException e) {
+                        MsalPlugin.this.callbackContext.error(e.getMessage());
                     }
-                });
-            } else {
-                cordova.getThreadPool().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            MsalPlugin.this.appMultipleClient.removeAccount(MsalPlugin.this.appMultipleClient.getAccount(account),
-                                    new IMultipleAccountPublicClientApplication.RemoveAccountCallback() {
-                                        @Override
-                                        public void onRemoved() {
-                                            MsalPlugin.this.callbackContext.success();
-                                        }
-
-                                        @Override
-                                        public void onError(MsalException e) {
-                                            MsalPlugin.this.callbackContext.error(e.getMessage());
-                                        }
-                                    });
-                        } catch (InterruptedException e) {
-                            MsalPlugin.this.callbackContext.error(e.getMessage());
-                        } catch (MsalException e) {
-                            MsalPlugin.this.callbackContext.error(e.getMessage());
-                        }
-                    }
-                });
-            }
+                }
+            });
         }
     }
 
