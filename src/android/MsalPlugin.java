@@ -444,7 +444,7 @@ public class MsalPlugin extends CordovaPlugin {
         this.checkConfigInit();
         if (this.SINGLE_ACCOUNT.equals(this.accountMode)) {
             cordova.getThreadPool().execute(new Runnable() {
-            @Override
+                @Override
                 public void run() {
                     try {
                         // Look for account first so we don't error out for one that doesn't exist
