@@ -1,3 +1,6 @@
+repositories {
+    maven { url 'https://pkgs.dev.azure.com/MicrosoftDeviceSDK/DuoSDK-Public/_packaging/Duo-SDK-Feed%40Local/maven/v1' }
+}
 dependencies {
-    implementation 'com.microsoft.identity.client:msal:1.4.+'
+    implementation 'com.microsoft.identity.client:msal:1.5.+'
 }
