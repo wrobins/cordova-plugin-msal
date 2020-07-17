@@ -284,10 +284,12 @@ public class MsalPlugin extends CordovaPlugin {
                     JSONArray accounts = new JSONArray();
                     try {
                         if (SINGLE_ACCOUNT.equals(accountMode)) {
-                            if (MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount() == null) {
-                                MsalPlugin.this.callbackContext.error("No account currently exists");
-                            } else {
-                                accounts.put(MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount().getId());
+                            IAccount account = MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount();
+                            if (account != null) {
+                                JSONObject accountObj = new JSONObject();
+                                accountObj.put("id", account.getId());
+                                accountObj.put("username", account.getUsername());
+                                accounts.put(accountObj);
                             }
                         } else {
                             for (IAccount account : MsalPlugin.this.appMultipleClient.getAccounts()) {
