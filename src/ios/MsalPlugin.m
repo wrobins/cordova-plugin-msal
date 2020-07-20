@@ -117,7 +117,7 @@
         NSMutableArray<NSDictionary *> *accounts = [[NSMutableArray<NSDictionary *> alloc] init];
         for (MSALAccount *account in [[self application] allAccounts:nil])
         {
-            [accounts addObject:@{ @"id" : [account identifier], @"username" : [account username]}];
+            [accounts addObject:@{ @"id" : [account identifier], @"username" : [account username], @"claims" : [account accountClaims]}];
         }
         CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:accounts];
         [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
