@@ -289,6 +289,7 @@ public class MsalPlugin extends CordovaPlugin {
                                 JSONObject accountObj = new JSONObject();
                                 accountObj.put("id", account.getId());
                                 accountObj.put("username", account.getUsername());
+                                accountObj.put("claims", new JSONObject(account.getClaims()));
                                 accounts.put(accountObj);
                             }
                         } else {
@@ -296,6 +297,7 @@ public class MsalPlugin extends CordovaPlugin {
                                 JSONObject accountObj = new JSONObject();
                                 accountObj.put("id", account.getId());
                                 accountObj.put("username", account.getUsername());
+                                accountObj.put("claims", new JSONObject(account.getClaims()));
                                 accounts.put(accountObj);
                             }
                         }
