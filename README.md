@@ -19,7 +19,7 @@ Be sure to grab a release tagged with OutSystems-*. I have a separate branch for
 
 A side effect of this is the authorizationUserAgent option is locked on WEBVIEW, since the other options rely on AndroidX.
 
-Here's the JSON you'll need to configure your plugin. If you only have one environment and build, you can put it in your extensibility configuration in your wrapper application. But you probably have debug/release builds in multiple envrionments with multiple Azure clients/tenants, so LifeTime is probably the best place to manage your extensibility configuration JSON. Open your wrapper application implementing this plugin in LifeTime and click the Settings link near the application's title with the gear icon. Select your environment in the dropdown near the application's title, and scroll down to the Advanced section. Under Extensibility Configurations, tick the Custom > radial and paste your JSON with that environment's variables there:
+Here's the JSON you'll need to configure your plugin. If you only have one environment and build, you can put it in your extensibility configuration in your wrapper application. But you probably have debug/release builds in multiple environments with multiple Azure clients/tenants, so LifeTime is probably the best place to manage your extensibility configuration JSON. Open your wrapper application implementing this plugin in LifeTime and click the Settings link near the application's title with the gear icon. Select your environment in the dropdown near the application's title, and scroll down to the Advanced section. Under Extensibility Configurations, tick the Custom > radial and paste your JSON with that environment's variables there:
 <pre>
 {
     "plugin": {
@@ -31,7 +31,7 @@ Here's the JSON you'll need to configure your plugin. If you only have one envir
             },
             {
                 "name": "CLIENT_ID",
-                "value": "your-client-guid-here-reuired"
+                "value": "your-client-guid-here-required"
             },
             {
                 "name": "KEY_HASH",
@@ -246,7 +246,7 @@ Any consent prompts that the user accepted giving your app access to their accou
 ### authorizationQueryStringParameters
 This is an array of objects of type {param: string, value: string}, empty by default. There are lots of extra query string parameters that can be passed with MSAL signin requests, and if you know you need to add this you probably already know what you want to put here.
 ### otherScopesToAuthorize
-This is an array of strings just like the scopes array you may have provided when you first called msalInit (or maybe you just left it at ['User.Read']). The different here is that the vanilla scopes array only tells MSAL, programatically, which API scopes it's allowed to call when getting data. Users are not asked to consent to those scopes until something tries to use them, which can result in annoying prompts in the middle of using your app. If you provide these extra scopes here as well, the user will be asked to accept all of them at once when signing in and won't get bugged later, regardless of whether those scopes are actually used or not.
+This is an array of strings just like the scopes array you may have provided when you first called msalInit (or maybe you just left it at ['User.Read']). The different here is that the vanilla scopes array only tells MSAL, programmatically, which API scopes it's allowed to call when getting data. Users are not asked to consent to those scopes until something tries to use them, which can result in annoying prompts in the middle of using your app. If you provide these extra scopes here as well, the user will be asked to accept all of them at once when signing in and won't get bugged later, regardless of whether those scopes are actually used or not.
 
 Here's an example usage:
 ```js
