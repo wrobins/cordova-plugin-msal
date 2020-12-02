@@ -247,6 +247,12 @@ Any consent prompts that the user accepted giving your app access to their accou
 This is an array of objects of type {param: string, value: string}, empty by default. There are lots of extra query string parameters that can be passed with MSAL signin requests, and if you know you need to add this you probably already know what you want to put here.
 ### otherScopesToAuthorize
 This is an array of strings just like the scopes array you may have provided when you first called msalInit (or maybe you just left it at ['User.Read']). The different here is that the vanilla scopes array only tells MSAL, programmatically, which API scopes it's allowed to call when getting data. Users are not asked to consent to those scopes until something tries to use them, which can result in annoying prompts in the middle of using your app. If you provide these extra scopes here as well, the user will be asked to accept all of them at once when signing in and won't get bugged later, regardless of whether those scopes are actually used or not.
+### webViewType (iOS only)
+By default, MSAL picks a default web view type for sign in based on the version of iOS. For iOS 11 and up, this is an AuthenticationSession (ASWebAuthenticationSession or SFAuthenticationSession) which shows the "App wants to sign in with" permission dialog. If you do not require SSO and wish to avoid this permission dialog you can specify one of the other web view types to use - both of which avoid the permission dialog.
+#### 'SAFARI_VIEW_CONTROLLER'
+Use a Safari web view for the sign in.
+#### 'WK_WEB_VIEW'
+Use a plain WKWebView for sign in.
 
 Here's an example usage:
 ```js
