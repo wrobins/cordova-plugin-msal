@@ -286,14 +286,13 @@
     else
     {
         MSALWebviewParameters *webParameters = [[MSALWebviewParameters alloc] initWithParentViewController:[self viewController]];
-
-        MSALInteractiveTokenParameters *interactiveParams = [[MSALInteractiveTokenParameters alloc] initWithScopes:[self scopes] webviewParameters:webParameters];
         
         NSError *err = nil;
         CDVPluginResult *result = nil;
         
         NSString *loginHint = (NSString *)[command.arguments objectAtIndex:0];
         NSString *prompt = (NSString *)[command.arguments objectAtIndex:1];
+        NSString *webViewType = (NSString *)[command.arguments objectAtIndex:4];
         
         if (err)
         {
@@ -301,6 +300,19 @@
             [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
             return;
         }
+        
+        if (![webViewType isEqual:[NSNull null]]) {
+            if ([webViewType isEqualToString:@"WK_WEB_VIEW"])
+            {
+                webParameters.webviewType = MSALWebviewTypeWKWebView;
+            }
+            if ([webViewType isEqualToString:@"SAFARI_VIEW_CONTROLLER"])
+            {
+                webParameters.webviewType = MSALWebviewTypeSafariViewController;
+            }
+        }
+
+        MSALInteractiveTokenParameters *interactiveParams = [[MSALInteractiveTokenParameters alloc] initWithScopes:[self scopes] webviewParameters:webParameters];
         
         if (![loginHint isEqual:[NSNull null]])
         {
