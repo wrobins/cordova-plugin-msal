@@ -284,25 +284,18 @@ public class MsalPlugin extends CordovaPlugin {
                     JSONArray accounts = new JSONArray();
                     try {
                         if (SINGLE_ACCOUNT.equals(accountMode)) {
-                            if (MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount() == null) {
-                                MsalPlugin.this.callbackContext.error("No account currently exists");
-                            } else {
-                                accounts.put(MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount().getId());
+                            if (MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount() != null) {
+                                accounts.put(getAccountObject(MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount()));
                             }
                         } else {
                             for (IAccount account : MsalPlugin.this.appMultipleClient.getAccounts()) {
-                                JSONObject accountObj = new JSONObject();
-                                accountObj.put("id", account.getId());
-                                accountObj.put("username", account.getUsername());
-                                accounts.put(accountObj);
+                                accounts.put(getAccountObject(account));
                             }
                         }
                         MsalPlugin.this.callbackContext.success(accounts);
                     } catch (InterruptedException e) {
                         MsalPlugin.this.callbackContext.error(e.getMessage());
                     } catch (MsalException e) {
-                        MsalPlugin.this.callbackContext.error(e.getMessage());
-                    } catch (JSONException e) {
                         MsalPlugin.this.callbackContext.error(e.getMessage());
                     }
                 }
@@ -531,5 +524,20 @@ public class MsalPlugin extends CordovaPlugin {
             return false;
         }
         return true;
+    }
+
+    private JSONObject getAccountObject(IAccount account) {
+        JSONObject acct = new JSONObject();
+        try {
+            acct.put("id", account.getId());
+            acct.put("username", account.getUsername());
+            acct.put("idToken", account.getIdToken());
+            acct.put("tenantId", account.getTenantId());
+            acct.put("authority", account.getAuthority());
+            acct.put("claims", account.getClaims());
+        } catch (JSONException e) {
+            MsalPlugin.this.callbackContext.error(e.getMessage());
+        }
+        return acct;
     }
 }
