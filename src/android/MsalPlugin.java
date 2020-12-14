@@ -23,6 +23,7 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import com.microsoft.identity.client.AcquireTokenParameters;
 import com.microsoft.identity.client.AuthenticationCallback;
@@ -315,7 +316,7 @@ public class MsalPlugin extends CordovaPlugin {
                                 MsalPlugin.this.callbackContext.error("No account currently exists");
                             } else {
                                 IAuthenticationResult silentAuthResult = MsalPlugin.this.appSingleClient.acquireTokenSilent(MsalPlugin.this.scopes, authority);
-                                MsalPlugin.this.callbackContext.success(getAccountObject(silentAuthResult.getAccount()));
+                                MsalPlugin.this.callbackContext.success(getAuthResult(silentAuthResult));
                             }
                         } catch (InterruptedException e) {
                             MsalPlugin.this.callbackContext.error(e.getMessage());
@@ -347,7 +348,7 @@ public class MsalPlugin extends CordovaPlugin {
                                     MsalPlugin.this.appMultipleClient.getAccount(account),
                                     authority
                             );
-                            MsalPlugin.this.callbackContext.success(getAccountObject(result.getAccount()));
+                            MsalPlugin.this.callbackContext.success(getAuthResult(result));
                         } catch (InterruptedException e) {
                             MsalPlugin.this.callbackContext.error(e.getMessage());
                         } catch (MsalException e) {
@@ -377,8 +378,8 @@ public class MsalPlugin extends CordovaPlugin {
                                     }
 
                                     @Override
-                                    public void onSuccess(IAuthenticationResult iAuthenticationResult) {
-                                        MsalPlugin.this.callbackContext.success(getAccountObject(iAuthenticationResult.getAccount()));
+                                    public void onSuccess(IAuthenticationResult authenticationResult) {
+                                        MsalPlugin.this.callbackContext.success(getAuthResult(authenticationResult));
                                     }
 
                                     @Override
@@ -411,8 +412,8 @@ public class MsalPlugin extends CordovaPlugin {
                                     }
 
                                     @Override
-                                    public void onSuccess(IAuthenticationResult iAuthenticationResult) {
-                                        MsalPlugin.this.callbackContext.success(getAccountObject(iAuthenticationResult.getAccount()));
+                                    public void onSuccess(IAuthenticationResult authenticationResult) {
+                                        MsalPlugin.this.callbackContext.success(getAuthResult(authenticationResult));
                                     }
 
                                     @Override
@@ -526,18 +527,41 @@ public class MsalPlugin extends CordovaPlugin {
         return true;
     }
 
+    private JSONObject getAuthResult(IAuthenticationResult result) {
+        JSONObject resultObj = new JSONObject();
+        try {
+            resultObj.put("token", result.getAccessToken());
+            resultObj.put("account", getAccountObject(result.getAccount()));
+        } catch (JSONException e) {
+            MsalPlugin.this.callbackContext.error(e.getMessage());
+        }
+        return resultObj;
+    }
+
     private JSONObject getAccountObject(IAccount account) {
         JSONObject acct = new JSONObject();
         try {
             acct.put("id", account.getId());
             acct.put("username", account.getUsername());
-            acct.put("idToken", account.getIdToken());
-            acct.put("tenantId", account.getTenantId());
-            acct.put("authority", account.getAuthority());
-            acct.put("claims", account.getClaims());
+            acct.put("claims", processClaims(account.getClaims()));
         } catch (JSONException e) {
             MsalPlugin.this.callbackContext.error(e.getMessage());
         }
         return acct;
+    }
+
+    private JSONArray processClaims(Map<String, ?> claims) {
+        JSONArray claimsArr = new JSONArray();
+        for (Map.Entry<String, ?> claim : claims.entrySet()) {
+            try {
+                JSONObject claimObj = new JSONObject();
+                claimObj.put("key", claim.getKey());
+                claimObj.put("value", claim.getValue());
+                claimsArr.put(claimObj);
+            } catch (JSONException e) {
+                MsalPlugin.this.callbackContext.error(e.getMessage());
+            }
+        }
+        return claimsArr;
     }
 }
