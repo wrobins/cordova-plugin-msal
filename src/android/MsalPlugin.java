@@ -315,7 +315,7 @@ public class MsalPlugin extends CordovaPlugin {
                                 MsalPlugin.this.callbackContext.error("No account currently exists");
                             } else {
                                 IAuthenticationResult silentAuthResult = MsalPlugin.this.appSingleClient.acquireTokenSilent(MsalPlugin.this.scopes, authority);
-                                MsalPlugin.this.callbackContext.success(silentAuthResult.getAccessToken());
+                                MsalPlugin.this.callbackContext.success(getAccountObject(silentAuthResult.getAccount()));
                             }
                         } catch (InterruptedException e) {
                             MsalPlugin.this.callbackContext.error(e.getMessage());
@@ -347,7 +347,7 @@ public class MsalPlugin extends CordovaPlugin {
                                     MsalPlugin.this.appMultipleClient.getAccount(account),
                                     authority
                             );
-                            MsalPlugin.this.callbackContext.success(result.getAccessToken());
+                            MsalPlugin.this.callbackContext.success(getAccountObject(result.getAccount()));
                         } catch (InterruptedException e) {
                             MsalPlugin.this.callbackContext.error(e.getMessage());
                         } catch (MsalException e) {
@@ -378,7 +378,7 @@ public class MsalPlugin extends CordovaPlugin {
 
                                     @Override
                                     public void onSuccess(IAuthenticationResult iAuthenticationResult) {
-                                        MsalPlugin.this.callbackContext.success(iAuthenticationResult.getAccessToken());
+                                        MsalPlugin.this.callbackContext.success(getAccountObject(iAuthenticationResult.getAccount()));
                                     }
 
                                     @Override
@@ -412,7 +412,7 @@ public class MsalPlugin extends CordovaPlugin {
 
                                     @Override
                                     public void onSuccess(IAuthenticationResult iAuthenticationResult) {
-                                        MsalPlugin.this.callbackContext.success(iAuthenticationResult.getAccessToken());
+                                        MsalPlugin.this.callbackContext.success(getAccountObject(iAuthenticationResult.getAccount()));
                                     }
 
                                     @Override
