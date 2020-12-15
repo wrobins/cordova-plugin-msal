@@ -105,6 +105,28 @@
     [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
 }
 
+- (NSDictionary *)getAccountObject:(MSALAccount *)account
+{
+    NSMutableDictionary *acct = [[NSMutableDictionary alloc] initWithCapacity:3];
+    [acct setValue:[account identifier] forKey:@"id"];
+    [acct setValue:[account username] forKey:@"username"];
+    NSMutableArray<NSDictionary *> *claims = [[NSMutableArray alloc] init];
+    for (id key in [account accountClaims])
+    {
+        [claims addObject:@{@"key" : key, @"value" : [[account accountClaims] objectForKey:key]}];
+    }
+    [acct setValue:[[NSArray<NSDictionary *> alloc] initWithArray:claims] forKey:@"claims"];
+    return [[NSDictionary alloc] initWithDictionary:acct];
+}
+
+- (NSDictionary *)getAuthResult:(MSALResult *)result
+{
+    NSMutableDictionary *obj = [[NSMutableDictionary alloc] initWithCapacity:2];
+    [obj setValue:result.accessToken forKey:@"token"];
+    [obj setValue:[self getAccountObject:result.account] forKey:@"account"];
+    return [[NSDictionary alloc] initWithDictionary:obj];
+}
+
 - (void)getAccounts:(CDVInvokedUrlCommand *)command
 {
     if (!self.isInit)
@@ -117,7 +139,7 @@
         NSMutableArray<NSDictionary *> *accounts = [[NSMutableArray<NSDictionary *> alloc] init];
         for (MSALAccount *account in [[self application] allAccounts:nil])
         {
-            [accounts addObject:@{ @"id" : [account identifier], @"username" : [account username]}];
+            [accounts addObject:[self getAccountObject:account]];
         }
         CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:accounts];
         [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
@@ -259,7 +281,7 @@
         [[self application] acquireTokenSilentWithParameters:silentParams completionBlock:^(MSALResult *result, NSError *error) {
             if (!error)
             {
-                CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:result.accessToken];
+                CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:[self getAuthResult:result]];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
             }
             else

@@ -13,6 +13,8 @@
 
 - (void)msalInit:(CDVInvokedUrlCommand*)command;
 - (void)startLogger:(CDVInvokedUrlCommand*)command;
+- (NSDictionary *)getAccountObject:(MSALAccount *)account;
+- (NSDictionary *)getAuthResult:(MSALResult *)result;
 - (void)getAccounts:(CDVInvokedUrlCommand*)command;
 - (void)signInSilent:(CDVInvokedUrlCommand*)command;
 - (void)signInInteractive:(CDVInvokedUrlCommand*)command;
