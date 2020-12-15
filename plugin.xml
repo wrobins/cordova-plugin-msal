@@ -128,4 +128,9 @@
         <source-file src="src/ios/MsalPlugin.m" />
         <source-file src="src/ios/AppDelegate+MsalCallback.m" />
     </platform>
+    <platform name="windows">
+        <config-file target="config.xml" parent="/*">
+            <preference name="windows-target-version" value="10.0" />
+        </config-file>
+    </platform>
 </plugin>
