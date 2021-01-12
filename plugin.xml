@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
-        id="cordova-plugin-msal" version="2.5.0">
+        id="cordova-plugin-msal" version="3.0.0-alpha.0">
     <name>Cordova MSAL Plugin</name>
     <description>A Cordova plugin providing a wrapper for Microsoft's MSAL library for Android and iOS.</description>
     <author>Walter Robins</author>
@@ -10,7 +10,8 @@
     <repo>https://github.com/wrobins/cordova-plugin-msal.git</repo>
     <issue>https://github.com/wrobins/cordova-plugin-msal/issues</issue>
     <engines>
-        <engine name="cordova" version=">=7.0.0"/>
+        <engine name="cordova-android" version=">=8.1.0"/>
+        <engine name="cordova-ios" version=">=5.1.1"/>
     </engines> 
     <js-module src="www/msalplugin.js" name="msalPlugin">
         <clobbers target="cordova.plugins.msalPlugin" />
@@ -45,6 +46,9 @@
                         android:path="/$KEY_HASH" />
                 </intent-filter>
             </activity>
+        </config-file>
+        <config-file target="config.xml" parent="/*">
+            <preference name="AndroidXEnabled" value="true" />
         </config-file>
         <source-file src="src/android/MsalPlugin.java" target-dir="src/com/wrobins/cordova/plugin" />
         <framework src="src/android/build-extras.gradle" custom="true" type="gradleReference" />
@@ -123,5 +127,23 @@
         <header-file src="src/ios/AppDelegate+MsalCallback.h" />
         <source-file src="src/ios/MsalPlugin.m" />
         <source-file src="src/ios/AppDelegate+MsalCallback.m" />
+    </platform>
+    <platform name="browser">
+        <config-file target="config.xml" parent="/*">
+          <feature name="MsalPlugin">
+            <param name="browser-package" value="MsalPlugin" />
+          </feature>
+        </config-file>
+        <js-module src="src/browser/msal-browser.min.js" name="Msal">
+          <runs />
+        </js-module>
+        <js-module src="src/browser/MsalPluginProxy.js" name="MsalPluginProxy">
+          <runs />
+        </js-module>
+      </platform>
+    <platform name="windows">
+        <config-file target="config.xml" parent="/*">
+            <preference name="windows-target-version" value="10.0" />
+        </config-file>
     </platform>
 </plugin>

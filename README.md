@@ -15,15 +15,17 @@ cordova plugin add cordova-plugin-msal --variable TENANT_ID=your-tenant-guid-her
 ### If you're using OutSystems
 You should use my [forge component](https://www.outsystems.com/forge/Component_Overview.aspx?ProjectId=8038). But if you want to implement a wrapper yourself, or if you're here because you're using that component and you want additional documentation, continue reading:
 
-Be sure to grab a release tagged with OutSystems-*. I have a separate branch for OutSystems because as of this writing, MABS (MABS 6.x) does not support AndroidX features, which are now a standard part of the Android MSAL library. I had to do some finagling with a custom build of the library with AndroidX features stripped out to avoid getting an error trying to build it with MABS.
+The latest releases of this plugin use AndroidX, which requires MABS 6.3 or later. MABS 7 beta or later enables AndroidX by default, but if you're using MABs 6x, you'll need to follow [OutSystems' documentation](https://success.outsystems.com/Documentation/11/Delivering_Mobile_Apps/Mobile_Apps_Build_Service/Building_apps_with_AndroidX) to enable AndroidX in your project.
 
-A side effect of this is the authorizationUserAgent option is locked on WEBVIEW, since the other options rely on AndroidX.
+If you can't use a recent MABS version, be sure to grab a release tagged with OutSystems-*. I have a separate branch for OutSystems because MABS versions prior to 6.3 do not support AndroidX features, which are now a standard part of the Android MSAL library. I had to do some finagling with a custom build of the library with AndroidX features stripped out to avoid getting an error trying to build it with MABS.
+
+A side effect of this is the authorizationUserAgent option is locked on WEBVIEW for those versions, since the other options rely on AndroidX.
 
 Here's the JSON you'll need to configure your plugin. If you only have one environment and build, you can put it in your extensibility configuration in your wrapper application. But you probably have debug/release builds in multiple environments with multiple Azure clients/tenants, so LifeTime is probably the best place to manage your extensibility configuration JSON. Open your wrapper application implementing this plugin in LifeTime and click the Settings link near the application's title with the gear icon. Select your environment in the dropdown near the application's title, and scroll down to the Advanced section. Under Extensibility Configurations, tick the Custom > radial and paste your JSON with that environment's variables there:
 <pre>
 {
     "plugin": {
-        "url": "https://github.com/wrobins/cordova-plugin-msal.git#OutSystems-v1.2.2",
+        "url": "https://github.com/wrobins/cordova-plugin-msal.git#v3.0.0-alpha.0",
         "variables": [
             {
                 "name": "TENANT_ID",
@@ -90,7 +92,7 @@ This specifies the locale of your organization's Azure instance. Can be one of t
 ##### default
 Boolean supplied if your authorities array contains multiple objects. Tells MSAL to try this authority first when signing in a user. Default: true
 #### authorizationUserAgent
-This is for Android - tells MSAL which webview to use when redirecting a user to sign in interactively (stay inside the native app's webview or use the device's external browser). Can be one of the following: 'DEFAULT' 'BROWSER' or 'WEBVIEW'. Default: 'DEFAULT'. Note: in OutSystems, this option is locked on 'WEBVIEW' regardless of what you try to set here because anything else requires androidX features which MABS does not currently allow.
+This is for Android - tells MSAL which webview to use when redirecting a user to sign in interactively (stay inside the native app's webview or use the device's external browser). Can be one of the following: 'DEFAULT' 'BROWSER' or 'WEBVIEW'. Default: 'DEFAULT'.
 #### multipleCloudsSupported
 If your organization supports multiple national clouds, set this to true. Otherwise, especially if you don't know what multiple national clouds means, leave this at false. Default: false
 #### brokerRedirectUri
@@ -105,8 +107,8 @@ Ok, you have your plugin initialized with your organization's configuration. Her
 Check to see if the user has an account cached with your app:
 ```js
 window.cordova.plugins.msalPlugin.signInSilent(
-    function(msg) {
-        // msg is your JWT for the account we found.
+    function(resp) {
+        // resp is an object containing information about the signed in user, see below.
     }, 
     function(err) {
         // err probably says "No accounts found" but maybe other debugging info
@@ -118,9 +120,8 @@ window.cordova.plugins.msalPlugin.signInSilent(
 If you don't have an account, then either prompt immediately to sign in interactively (see below) or, if your app has guest access, do nothing and show your user an interface with options for signing in or continuing as a guest, wait for them to pick one. (Or don't do either. This plugin won't do you any good but it's your app.) If they choose to sign in, then start that flow with:
 ```js
 window.cordova.plugins.msalPlugin.signInInteractive(
-    function(msg) {
-        // msg is your JWT for the account the user just signed into
-        // Also never use a preposition to end a sentence with
+    function(resp) {
+        // resp is an object containing information about the signed in user, see below.
     }, 
     function(err) {
         // Usually if we get an error it just means the user cancelled the
@@ -133,7 +134,7 @@ Signing the user out is as simple as calling:
 ```js
 window.cordova.plugins.msalPlugin.signOut(
     function(msg) {
-        // msg is just the "OK" plugin result
+        // account is an object containing information about the signed in user, see below.
     }, 
     function(err) {
         // An error here usually either means you accidentally tried to
@@ -142,8 +143,58 @@ window.cordova.plugins.msalPlugin.signOut(
     }
 );
 ```
+### Response Object
+The object returned by signInInteractive() and signInSilent() will look something like this:
+```js
+{
+    token: 'eyJ0eXAiOiJKV1QiLCJub...',
+    account: {
+        id: 'abc-someguid-123',
+        username: 'wrobins@myemailaddr.com',
+        claims: [
+            {key: "name", value: "Robins, Walter"},
+            {key: "ver", value: "2.0"},
+            { ... }
+        ]
+    }
+}
+```
+### token
+This is a JWT that you can use to make any call you need to the Microsoft Graph API. You can read more about it [here](https://docs.microsoft.com/en-us/graph/overview), but here's a simple request you can make with it:
+<pre>
+GET https://graph.microsoft.com/v1.0/me
+'Authorization': 'Bearer resp.token'
+</pre>
+You'll get an object back something like:
+```js
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users/$entity",
+  "businessPhones": [
+    "+12345678910"
+  ],
+  "displayName": "Robins, Walter",
+  "givenName": "Walter",
+  "jobTitle": "Developer",
+  "mail": null,
+  "mobilePhone": null,
+  "officeLocation": null,
+  "preferredLanguage": null,
+  "surname": "Robins",
+  "userPrincipalName": "wrobins@myemailaddr.com",
+  "id": "myaccount-guid-1234"
+}
+```
+### account
+This object contains information about the account returned by Microsoft.
+#### id
+This is a unique GUID that Microsoft has assigned to this account.
+#### username
+This is usually the account's email address that they would use to sign in.
+#### claims
+This is an array of key/value pairs that, depending on the organization, tenant, account, can contain lots of different pieces of information about the account, such as the user's given name, audience and tenant information, as well as the the token's issue and expiration date. But you'll have to play around with this to see what it contains.
+
 ### Multiple Clients
-Operation is very similar to single account mode, but with one extra method to get the accounts you need: getAccounts(). It returns an array of objects {id: string, username: string} to represent accounts found in your app. Use it to see if you need to sign in a user interactively or manually. Your signInSilent() and signOut() methods will take an account id as an argument to pick which account you're working with.
+Operation is very similar to single account mode, but with one extra method to get the accounts you need: getAccounts(). It returns an array of objects to represent accounts found in your app, defined exactly like the signin response objects outlined above. Use it to see if you need to sign in a user interactively or manually. Your signInSilent() and signOut() methods will take an account id (the GUID, not the username) as an argument to pick which account you're working with.
 
 Again, your logic might look more separate if you want to have guest access to your app, but this code without guest access should give you an idea of how this plugin works:
 ```js
@@ -151,9 +202,8 @@ window.cordova.plugins.msalPlugin.getAccounts(
     function(accounts) {
         if (accounts.length === 0) {
             window.cordova.plugins.msalPlugin.signInInteractive(
-                function(jwt) {
-                    validateMyJWT(jwt);
-                    doMySigninBusinessLogic();
+                function(resp) {
+                    doMySigninBusinessLogic(resp);
                 },
                 function(err) {
                      myAwesomeErrorHandler.handlerError(err);
@@ -163,20 +213,18 @@ window.cordova.plugins.msalPlugin.getAccounts(
             myAwesomeInterface.showAccountsList(accounts).waitForUserInput().then(pickedAccount => {
                 if (pickedAccount) {
                     window.cordova.plugins.msalPlugin.signInSilent(
-                        function(jwt) {
-                            validateMyJWT(jwt);
-                            doMySigninBusinessLogic();
+                        function(resp) {
+                            doMySigninBusinessLogic(resp);
                         },
                         function(err) {
                             myAwesomeErrorHandler.handlerError(err);
                         },
-                        pickedAccount.id
+                        pickedAccount.account.id
                     );
                 } else {
                     window.cordova.plugins.msalPlugin.signInInteractive(
-                        function(jwt) {
-                            validateMyJWT(jwt);
-                            doMySigninBusinessLogic();
+                        function(resp) {
+                            doMySigninBusinessLogic(resp);
                         },
                         function(err) {
                             myAwesomeErrorHandler.handlerError(err);
@@ -200,35 +248,9 @@ window.cordova.plugins.msalPlugin.signOut(
     function(err) {
         myAwesomeErrorHandler.handlerError(err);
     },
-    accountId
+    currentLoggedInAccount.account.id
 );
 ```
-## Validating the JWT
-Once you get a successful sign-in, the plugin just returns the JWT for that account. You can validate it against Graph:
-<pre>
-GET https://graph.microsoft.com/v1.0/me
-'Authorization': 'Bearer myaccountJWT'
-</pre>
-You'll get an object back something like:
-```js
-{
-  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users/$entity",
-  "businessPhones": [
-    "+12345678910"
-  ],
-  "displayName": "Robins, Walter",
-  "givenName": "Walter",
-  "jobTitle": "Developer",
-  "mail": null,
-  "mobilePhone": null,
-  "officeLocation": null,
-  "preferredLanguage": null,
-  "surname": "Robins",
-  "userPrincipalName": "wrobins@myemailaddr.com",
-  "id": "myaccount-guid-1234"
-}
-```
-You can use that in your business logic to manage your accounts locally.
 
 ## Advanced Login Configuration
 Normally, you don't need to pass anything into signInInteractive() other than your callbacks; it just works. But there might be cases where you need some more control over signing someone in.
