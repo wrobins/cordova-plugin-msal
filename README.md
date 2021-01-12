@@ -15,15 +15,17 @@ cordova plugin add cordova-plugin-msal --variable TENANT_ID=your-tenant-guid-her
 ### If you're using OutSystems
 You should use my [forge component](https://www.outsystems.com/forge/Component_Overview.aspx?ProjectId=8038). But if you want to implement a wrapper yourself, or if you're here because you're using that component and you want additional documentation, continue reading:
 
-Be sure to grab a release tagged with OutSystems-*. I have a separate branch for OutSystems because as of this writing, MABS (MABS 6.x) does not support AndroidX features, which are now a standard part of the Android MSAL library. I had to do some finagling with a custom build of the library with AndroidX features stripped out to avoid getting an error trying to build it with MABS.
+The latest releases of this plugin use AndroidX, which requires MABS 6.3 or later. MABS 7 beta or later enables AndroidX by default, but if you're using MABs 6x, you'll need to follow [OutSystems' documentation](https://success.outsystems.com/Documentation/11/Delivering_Mobile_Apps/Mobile_Apps_Build_Service/Building_apps_with_AndroidX) to enable AndroidX in your project.
 
-A side effect of this is the authorizationUserAgent option is locked on WEBVIEW, since the other options rely on AndroidX.
+If you can't use a recent MABS version, be sure to grab a release tagged with OutSystems-*. I have a separate branch for OutSystems because MABS versions prior to 6.3 do not support AndroidX features, which are now a standard part of the Android MSAL library. I had to do some finagling with a custom build of the library with AndroidX features stripped out to avoid getting an error trying to build it with MABS.
+
+A side effect of this is the authorizationUserAgent option is locked on WEBVIEW for those versions, since the other options rely on AndroidX.
 
 Here's the JSON you'll need to configure your plugin. If you only have one environment and build, you can put it in your extensibility configuration in your wrapper application. But you probably have debug/release builds in multiple environments with multiple Azure clients/tenants, so LifeTime is probably the best place to manage your extensibility configuration JSON. Open your wrapper application implementing this plugin in LifeTime and click the Settings link near the application's title with the gear icon. Select your environment in the dropdown near the application's title, and scroll down to the Advanced section. Under Extensibility Configurations, tick the Custom > radial and paste your JSON with that environment's variables there:
 <pre>
 {
     "plugin": {
-        "url": "https://github.com/wrobins/cordova-plugin-msal.git#OutSystems-v1.2.2",
+        "url": "https://github.com/wrobins/cordova-plugin-msal.git#v3.0.0-alpha.0",
         "variables": [
             {
                 "name": "TENANT_ID",
@@ -90,7 +92,7 @@ This specifies the locale of your organization's Azure instance. Can be one of t
 ##### default
 Boolean supplied if your authorities array contains multiple objects. Tells MSAL to try this authority first when signing in a user. Default: true
 #### authorizationUserAgent
-This is for Android - tells MSAL which webview to use when redirecting a user to sign in interactively (stay inside the native app's webview or use the device's external browser). Can be one of the following: 'DEFAULT' 'BROWSER' or 'WEBVIEW'. Default: 'DEFAULT'. Note: in OutSystems, this option is locked on 'WEBVIEW' regardless of what you try to set here because anything else requires androidX features which MABS does not currently allow.
+This is for Android - tells MSAL which webview to use when redirecting a user to sign in interactively (stay inside the native app's webview or use the device's external browser). Can be one of the following: 'DEFAULT' 'BROWSER' or 'WEBVIEW'. Default: 'DEFAULT'.
 #### multipleCloudsSupported
 If your organization supports multiple national clouds, set this to true. Otherwise, especially if you don't know what multiple national clouds means, leave this at false. Default: false
 #### brokerRedirectUri
@@ -158,7 +160,7 @@ The object returned by signInInteractive() and signInSilent() will look somethin
 }
 ```
 ### token
-This is a JWT that you can use to make any call you need to the Microsoft Graph API. You can read more about it here, but here's a simple request you can make with it:
+This is a JWT that you can use to make any call you need to the Microsoft Graph API. You can read more about it [here](https://docs.microsoft.com/en-us/graph/overview), but here's a simple request you can make with it:
 <pre>
 GET https://graph.microsoft.com/v1.0/me
 'Authorization': 'Bearer resp.token'
