@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
-        id="cordova-plugin-msal" version="2.5.0">
+        id="cordova-plugin-msal" version="3.0.0-alpha.0">
     <name>Cordova MSAL Plugin</name>
     <description>A Cordova plugin providing a wrapper for Microsoft's MSAL library for Android and iOS.</description>
     <author>Walter Robins</author>
@@ -128,6 +128,19 @@
         <source-file src="src/ios/MsalPlugin.m" />
         <source-file src="src/ios/AppDelegate+MsalCallback.m" />
     </platform>
+    <platform name="browser">
+        <config-file target="config.xml" parent="/*">
+          <feature name="MsalPlugin">
+            <param name="browser-package" value="MsalPlugin" />
+          </feature>
+        </config-file>
+        <js-module src="src/browser/msal-browser.min.js" name="Msal">
+          <runs />
+        </js-module>
+        <js-module src="src/browser/MsalPluginProxy.js" name="MsalPluginProxy">
+          <runs />
+        </js-module>
+      </platform>
     <platform name="windows">
         <config-file target="config.xml" parent="/*">
             <preference name="windows-target-version" value="10.0" />
