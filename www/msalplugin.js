@@ -22,6 +22,26 @@ module.exports = {
             if (typeof(options.authorities) == 'undefined') {
                 options.authorities = defaultOptions.authorities;
             }
+            else {
+                for (var i = 0; i < options.authorities.length; i++) {
+                    var authority = options.authorities[i];
+                    if (typeof(authority.type) == 'undefined') {
+                        authority.type = defaultOptions.authorities[0].type;
+                    }
+                    if (typeof(authority.audience) == 'undefined') {
+                        authority.audience = defaultOptions.authorities[0].audience;
+                    }
+                    if (typeof(authority.authorityUrl) == 'undefined') {
+                        authority.authorityUrl = defaultOptions.authorities[0].authorityUrl;
+                    }
+                    if (typeof(authority.cloudInstance) == 'undefined') {
+                        authority.cloudInstance = defaultOptions.authorities[0].cloudInstance;
+                    }
+                    if (typeof(authority.default) == 'undefined') {
+                        authority.default = defaultOptions.authorities[0].default;
+                    }
+                }
+            }
             if (typeof(options.authorizationUserAgent) == 'undefined') {
                 options.authorizationUserAgent = defaultOptions.authorizationUserAgent;
             }
