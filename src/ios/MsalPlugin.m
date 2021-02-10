@@ -368,7 +368,7 @@
         [[self application] acquireTokenWithParameters:interactiveParams completionBlock:^(MSALResult *result, NSError *error) {
             if (!error)
             {
-                CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:result.accessToken];
+                CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:[self getAuthResult:result]];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
             }
             else
