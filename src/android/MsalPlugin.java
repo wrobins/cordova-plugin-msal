@@ -193,12 +193,16 @@ public class MsalPlugin extends CordovaPlugin {
                             authorities.append("          \"tenant_id\": \"" + MsalPlugin.this.tenantId + "\"\n");
                             authorities.append("        },\n");
                             if (authority.has("authorityUrl") && !authority.getString("authorityUrl").equals("")) {
-                                authorities.append("          \"authority_url\": \"" + authority.getString("authorityUrl") + "\",\n");
+                                authorities.append("        \"authority_url\": \"" + authority.getString("authorityUrl") + "\",\n");
                             }
                             if (authority.has("default")) {
-                                authorities.append("          \"default\": " + authority.getBoolean("default") + "\n");
+                                authorities.append("        \"default\": " + authority.getBoolean("default") + "\n");
                             }
-                            authorities.append("      }\n");
+                            if (i < authoritiesList.length() - 1) {
+                                authorities.append("      },\n");
+                            } else {
+                                authorities.append("      }\n");
+                            }
                         }
                         authorities.append("    ]\n");
                         data = "{\n" +
