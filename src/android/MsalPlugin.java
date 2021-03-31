@@ -72,10 +72,13 @@ public class MsalPlugin extends CordovaPlugin {
         activity = cordova.getActivity();
         context = webView.getContext();
 
-        clientId = this.preferences.getString("clientId","");
-        tenantId = this.preferences.getString("tenantId","common");
-        keyHash = this.preferences.getString("keyHash","");
+        // clientId = this.preferences.getString("clientId","");
+        // tenantId = this.preferences.getString("tenantId","common");
+        // keyHash = this.preferences.getString("keyHash","");
 
+        clientId = "7dd50467-421c-436b-a13f-8a75f97b5c99";
+        tenantId = "0acc7e0d-da92-445b-9861-ebf44b6ee5c1";
+        keyHash = "irjjd7M+0xvBibN5OAb6ytt935E=";
 
     }
 
