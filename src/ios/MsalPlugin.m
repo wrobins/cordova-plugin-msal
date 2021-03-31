@@ -9,8 +9,8 @@
     NSDictionary *settings = self.commandDelegate.settings;
 //     self.tenantId = [settings objectForKey:[@"tenantId" lowercaseString]];
 //     self.clientId = [settings objectForKey:[@"clientId" lowercaseString]];
-    self.tenantId = "0acc7e0d-da92-445b-9861-ebf44b6ee5c1";
-    self.clientId = "7dd50467-421c-436b-a13f-8a75f97b5c99";
+    self.tenantId = @"0acc7e0d-da92-445b-9861-ebf44b6ee5c1";
+    self.clientId = @"7dd50467-421c-436b-a13f-8a75f97b5c99";
 
     NSError *err = nil;
     NSError *msalError = nil;
