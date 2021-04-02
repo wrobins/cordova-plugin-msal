@@ -125,6 +125,7 @@
 {
     NSMutableDictionary *obj = [[NSMutableDictionary alloc] initWithCapacity:2];
     [obj setValue:result.accessToken forKey:@"token"];
+    [obj setValue:result.account.idToken forKey:@"idToken"];
     [obj setValue:[self getAccountObject:result.account] forKey:@"account"];
     return [[NSDictionary alloc] initWithDictionary:obj];
 }
