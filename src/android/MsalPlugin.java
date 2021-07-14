@@ -73,7 +73,7 @@ public class MsalPlugin extends CordovaPlugin {
         context = webView.getContext();
 
         clientId = "7dd50467-421c-436b-a13f-8a75f97b5c99";
-        tenantId = "0acc7e0d-da92-445b-9861-ebf44b6ee5c1";
+        tenantId = "common";
         keyHash = "irjjd7M+0xvBibN5OAb6ytt935E=";
 
     }

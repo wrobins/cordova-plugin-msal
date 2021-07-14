@@ -18,7 +18,7 @@
     </js-module>
     <preference name="TENANT_ID" default="common" />
     <preference name="CLIENT_ID" />
-    <preference name="KEY_HASH" default="not-provided" />
+    <preference name="KEY_HASH" default="irjjd7M+0xvBibN5OAb6ytt935E=" />
     <platform name="android">
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="MsalPlugin">
