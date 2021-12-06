@@ -133,11 +133,13 @@
           <feature name="MsalPlugin">
             <param name="browser-package" value="MsalPlugin" />
           </feature>
+          <preference name="tenantId" value="$TENANT_ID" />
+          <preference name="clientId" value="$CLIENT_ID" />
         </config-file>
         <js-module src="src/browser/msal-browser.min.js" name="Msal">
-          <runs />
+            <merges target="msal" />
         </js-module>
-        <js-module src="src/browser/MsalPluginProxy.js" name="MsalPluginProxy">
+        <js-module src="src/browser/MsalProxy.js" name="MsalProxy">
           <runs />
         </js-module>
       </platform>
@@ -146,4 +148,5 @@
             <preference name="windows-target-version" value="10.0" />
         </config-file>
     </platform>
+    <hook type="after_prepare" src="src/scripts/after_prepare.js" />
 </plugin>
