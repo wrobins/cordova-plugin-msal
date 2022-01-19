@@ -165,7 +165,7 @@ function startLogger(success, error, opts) {
                 logLevel = 3;
         }
         msalApp.setLogger(new msal.Logger({
-            LogLevel: logLevel,
+            logLevel: logLevel,
             piiLoggingEnabled: opts[0],
             loggerCallback: function(level, message, containsPii) {
                 success({
@@ -175,7 +175,7 @@ function startLogger(success, error, opts) {
                     logLevel: level,
                     containsPII: containsPii,
                     message: message
-                });
+                },{keepCallback:true});
             }
         }));
     } catch (ex) {
