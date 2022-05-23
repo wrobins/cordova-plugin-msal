@@ -562,15 +562,13 @@ public class MsalPlugin extends CordovaPlugin {
                 claimObj.put("key", claim.getKey());
                 if (claim.getValue() instanceof net.minidev.json.JSONArray) {
                   claimObj.put("value", new JSONArray(claim.getValue().toString()));
-                }
-                else if (claim.getValue() instanceof ArrayList) {
+                } else if (claim.getValue() instanceof ArrayList) {
                   JSONArray arr = new JSONArray();
                   for (Object obj: (ArrayList)claim.getValue()) {
                     arr.put(obj);
                   }
                   claimObj.put("value", arr);
-                }
-                else {
+                } else {
                   claimObj.put("value", claim.getValue());
                 }
                 claimsArr.put(claimObj);
