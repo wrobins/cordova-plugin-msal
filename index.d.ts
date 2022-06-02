@@ -20,7 +20,7 @@
 
 interface JwtClaim {
   key: string;
-  value: string;
+  value: string | string[];
 }
 
 interface JwtAccount {
