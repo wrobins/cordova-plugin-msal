@@ -35,7 +35,7 @@
             <uses-permission android:name="android.permission.READ_CONTACTS" />
         </config-file>
         <config-file target="AndroidManifest.xml" parent="application">
-            <activity
+            <activity android:exported="true"
                 android:name="com.microsoft.identity.client.BrowserTabActivity">
                 <intent-filter>
                     <action android:name="android.intent.action.VIEW" />
