@@ -40,5 +40,6 @@
     "bugs": {
       "url": "https://github.com/wrobins/cordova-plugin-msal/issues"
     },
+    "types": "./index.d.ts",
     "homepage": "https://github.com/wrobins/cordova-plugin-msal"
 }
