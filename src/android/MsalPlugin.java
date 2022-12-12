@@ -22,6 +22,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -139,15 +140,16 @@ public class MsalPlugin extends CordovaPlugin {
                             prompt = Prompt.WHEN_REQUIRED;
                     }
                 }
-                List<Pair<String, String>> authorizationQueryStringParameters = new ArrayList<Pair<String, String>>();
+                List<Map.Entry<String, String>> authorizationQueryStringParameters = new ArrayList<>();
+                Map<String, String> params = new HashMap<>();
                 if (args.length() > 2) {
                     JSONArray queryParams = args.getJSONArray(2);
                     for (int i = 0; i < queryParams.length(); ++i) {
                         JSONObject queryParam = queryParams.getJSONObject(i);
-                        authorizationQueryStringParameters.add(new Pair<String, String>(
-                                queryParam.getString("param"),
-                                queryParam.getString("value")
-                        ));
+                        params.put(queryParam.getString("param"), queryParam.getString("value"));
+                    }
+                    for (Map.Entry<String, String> param: params.entrySet()) {
+                        authorizationQueryStringParameters.add(param);
                     }
                 }
                 ArrayList<String> scopes = new ArrayList<String>();
@@ -364,7 +366,7 @@ public class MsalPlugin extends CordovaPlugin {
         }
     }
 
-    private void signinUserInteractive(final String loginHint, final List<Pair<String, String>> authorizationQueryStringParameters, final Prompt prompt, final String[] otherScopesToAuthorize) {
+    private void signinUserInteractive(final String loginHint, final List<Map.Entry<String, String>> authorizationQueryStringParameters, final Prompt prompt, final String[] otherScopesToAuthorize) {
         if (this.checkConfigInit()) {
             if (this.SINGLE_ACCOUNT.equals(this.accountMode)) {
                 cordova.getThreadPool().execute(new Runnable() {
@@ -560,7 +562,7 @@ public class MsalPlugin extends CordovaPlugin {
             try {
                 JSONObject claimObj = new JSONObject();
                 claimObj.put("key", claim.getKey());
-                if (claim.getValue() instanceof net.minidev.json.JSONArray) {
+                if (claim.getValue() instanceof JSONArray) {
                   claimObj.put("value", new JSONArray(claim.getValue().toString()));
                 } else if (claim.getValue() instanceof ArrayList) {
                   JSONArray arr = new JSONArray();
