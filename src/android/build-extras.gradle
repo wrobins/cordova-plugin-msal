@@ -1,15 +1,5 @@
-android {
-    compileSdkVersion 33
-    defaultConfig {
-        minSdkVersion 26
-        targetSdkVersion 33
-    }
-}
 repositories {
     maven {
         url 'https://pkgs.dev.azure.com/MicrosoftDeviceSDK/DuoSDK-Public/_packaging/Duo-SDK-Feed/maven/v1'
     }
-}
-dependencies {
-    implementation 'com.microsoft.identity.client:msal:4.1.+'
 }
