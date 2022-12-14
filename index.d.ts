@@ -84,6 +84,13 @@ interface InitOptions {
    *  https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-permissions-and-consent#openid-connect-scopes
    */
   scopes: Array<string>;
+
+  /** ANDROID ONLY: Optional zoom controls for defining web view behavior */
+  webViewZoomControlsEnabled?: boolean;
+  webViewZoomEnabled?: boolean;
+
+  /** ANDROID ONLY: Check power optimization setting before attempting network in doze mode (default: true) */
+  powerOptCheckForNetworkReqEnabled?: boolean;
 }
 
 interface InteractiveSignInOptions {
