@@ -153,11 +153,11 @@
     [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
     
     if ([command.arguments objectAtIndex:0] == [NSNumber numberWithBool:NO]) {
-        MSALGlobalConfig.loggerConfig.piiEnabled = NO;
+        MSALGlobalConfig.loggerConfig.logMaskingLevel = MSALLogMaskingSettingsMaskAllPII;
     }
     else
     {
-        MSALGlobalConfig.loggerConfig.piiEnabled = YES;
+        MSALGlobalConfig.loggerConfig.logMaskingLevel = MSALLogMaskingSettingsMaskSecretsOnly;
     }
     
     if ([[command.arguments objectAtIndex:1] isEqualToString:@"ERROR"])
@@ -307,7 +307,7 @@
     }
     else
     {
-        MSALWebviewParameters *webParameters = [[MSALWebviewParameters alloc] initWithParentViewController:[self viewController]];
+        MSALWebviewParameters *webParameters = [[MSALWebviewParameters alloc] initWithAuthPresentationViewController:[self viewController]];
         
         NSError *err = nil;
         CDVPluginResult *result = nil;
