@@ -14,7 +14,10 @@ module.exports = {
             multipleCloudsSupported: false,
             brokerRedirectUri: false,
             accountMode: 'SINGLE',
-            scopes: ['User.Read']
+            scopes: ['User.Read'],
+            webViewZoomControlsEnabled: false,
+            webViewZoomEnabled: false,
+            powerOptCheckForNetworkReqEnabled: true
         }
         if (!options) {
             options = defaultOptions;
