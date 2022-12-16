@@ -208,6 +208,9 @@ public class MsalPlugin extends CordovaPlugin {
                         }
                         authorities.append("    ]\n");
                         data = "{\n" +
+                                "    \"power_opt_check_for_network_req_enabled\": " + options.optBoolean("powerOptCheckForNetworkReqEnabled", true) + ",\n" +
+                                "    \"web_view_zoom_controls_enabled\": " + options.optBoolean("webViewZoomControlsEnabled", true) + ",\n" +
+                                "    \"web_view_zoom_enabled\" : " + options.optBoolean("webViewZoomEnabled", true) + ",\n" +
                                 "    \"client_id\" : \"" + MsalPlugin.this.clientId + "\",\n" +
                                 "    \"account_mode\": \"" + options.getString("accountMode") + "\",\n" +
                                 "    \"authorization_user_agent\" : \"" + options.getString("authorizationUserAgent") + "\",\n" +
