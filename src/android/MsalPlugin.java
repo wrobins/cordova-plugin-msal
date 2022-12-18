@@ -185,6 +185,12 @@ public class MsalPlugin extends CordovaPlugin {
                     StringBuilder authorities = new StringBuilder("    \"authorities\": [\n");
                     String data;
                     try {
+                        if (!"".equals(options.optString("tenantId"))) {
+                            MsalPlugin.this.tenantId = options.getString("tenantId");
+                        }
+                        if (!"".equals(options.optString("clientId"))) {
+                            MsalPlugin.this.clientId = options.getString("clientId");
+                        }
                         JSONArray authoritiesList = options.getJSONArray("authorities");
                         for (int i = 0; i < authoritiesList.length(); ++i) {
                             JSONObject authority = authoritiesList.getJSONObject(i);

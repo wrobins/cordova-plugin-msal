@@ -17,7 +17,9 @@ module.exports = {
             scopes: ['User.Read'],
             webViewZoomControlsEnabled: false,
             webViewZoomEnabled: false,
-            powerOptCheckForNetworkReqEnabled: true
+            powerOptCheckForNetworkReqEnabled: true,
+            clientId: '',
+            tenantId: ''
         }
         if (!options) {
             options = defaultOptions;
@@ -59,6 +61,12 @@ module.exports = {
             }
             if (typeof(options.scopes) == 'undefined') {
                 options.scopes = defaultOptions.scopes;
+            }            
+            if (typeof(options.clientId) == 'undefined') {
+                options.clientId = defaultOptions.clientId;
+            }
+            if (typeof(options.tenantId) == 'undefined') {
+                options.tenantId = defaultOptions.tenantId;
             }
         }
         cordova.exec(successCallback, errorCallback, 'MsalPlugin', 'msalInit', [JSON.stringify(options)]);

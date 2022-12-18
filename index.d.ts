@@ -85,6 +85,15 @@ interface InitOptions {
    */
   scopes: Array<string>;
 
+  /** Optional clientId and tenantId to support changing B2C tenants on the fly.
+   * 
+   * These values, if provided, will override the ones provided in your package.json file.
+   * If you do not wish to support multiple tenants, you can leave these out and the ones
+   * provided in your package.json will be used as they always were. No change required.
+   */
+  clientId?: string;
+  tenantId?: string;
+
   /** ANDROID ONLY: Optional zoom controls for defining web view behavior */
   webViewZoomControlsEnabled?: boolean;
   webViewZoomEnabled?: boolean;

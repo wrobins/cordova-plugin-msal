@@ -12,6 +12,7 @@ If you aren't using AzureADMyOrg as one of your authorities, you can omit TENANT
 <pre>
 cordova plugin add cordova-plugin-msal --variable TENANT_ID=your-tenant-guid-here --variable CLIENT_ID=your-client-guid-here --variable KEY_HASH=S0m3K3yh4shH3re=
 </pre>
+Note that since the added support for multiple tentants/clients, you can now provide these IDs in via `msalInit` if they are not available at build time.
 ### If you're using OutSystems
 You should use my [forge component](https://www.outsystems.com/forge/Component_Overview.aspx?ProjectId=8038). But if you want to implement a wrapper yourself, or if you're here because you're using that component and you want additional documentation, continue reading:
 
@@ -291,6 +292,15 @@ window.cordova.plugins.msalPlugin.signInInteractive(mycbfunction(msg), myerrorfu
         authorizationQueryStringParameters: [{param: 'domain_hint', value: 'my-tenant-guid'}];
     }
 );
+```
+
+## Multiple tenants/client applications
+You can now provide your `tenantId` or `clientId` in directly to the `msalInit` function via the `options` object. This means that the plugin can support swapping between different tenants/clients on the fly just by re-initialising the plugin with the new IDs. This is useful if you want to support different geographical regions or tenants without having to rebuild the app for each different configuration.
+```js
+cordova.plugins.msalPlugin.msalInit(resolve, reject, {
+    ...
+    clientId: 'abcd1234-1111-2222-3333-eeeeeeffffff'
+});
 ```
 
 ## Logging/Debugging

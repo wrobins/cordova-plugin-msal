@@ -18,7 +18,7 @@
         <clobbers target="cordova.plugins.msalPlugin" />
     </js-module>
     <preference name="TENANT_ID" default="common" />
-    <preference name="CLIENT_ID" />
+    <preference name="CLIENT_ID" default="00000000-0000-0000-0000-000000000000" />
     <preference name="KEY_HASH" default="not-provided" />
     <platform name="android">
         <config-file target="res/xml/config.xml" parent="/*">
