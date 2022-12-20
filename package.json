@@ -6,7 +6,8 @@
       "id": "cordova-plugin-msal",
       "platforms": [
         "android",
-        "ios"
+        "ios",
+        "browser"
       ]
     },
     "repository": {

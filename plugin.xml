@@ -145,10 +145,5 @@
           <runs />
         </js-module>
       </platform>
-    <platform name="windows">
-        <config-file target="config.xml" parent="/*">
-            <preference name="windows-target-version" value="10.0" />
-        </config-file>
-    </platform>
     <hook type="after_prepare" src="src/scripts/after_prepare.js" />
 </plugin>
