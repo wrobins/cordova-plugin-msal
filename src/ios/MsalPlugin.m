@@ -27,6 +27,12 @@
         return;
     }
     NSDictionary *options = (NSDictionary *)obj;
+    if (![[options objectForKey:@"tenantId"] isEqualToString:@""]) {
+        self.tenantId = [options objectForKey:@"tenantId"];
+    }
+    if (![[options objectForKey:@"clientId"] isEqualToString:@""]) {
+        self.clientId = [options objectForKey:@"clientId"];
+    }
     NSArray *authorities = [options objectForKey:@"authorities"];
     for (NSDictionary *a in authorities)
     {

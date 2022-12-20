@@ -16,8 +16,8 @@ let accountMode = 'SINGLE';
 function msalInit(success, error, opts) {
     try {
         const providedConfig = JSON.parse(opts[0]);
-        msalConfig.auth.clientId = clientID;
-        msalConfig.auth.authority = `https://login.microsoftonline.com/${tenantId}`;
+        msalConfig.auth.clientId = providedConfig.clientId || clientID;
+        msalConfig.auth.authority = `https://login.microsoftonline.com/${providedConfig.tenantId || tenantId}`;
         msalConfig.auth.knownAuthorities = providedConfig.authorities.filter(a => a.authorityUrl !== '').map(a => a.authorityUrl);
         accountMode = providedConfig.accountMode;
         loginRequest.scopes = providedConfig.scopes;
