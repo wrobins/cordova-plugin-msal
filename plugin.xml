@@ -17,15 +17,11 @@
     <js-module src="www/msalplugin.js" name="msalPlugin">
         <clobbers target="cordova.plugins.msalPlugin" />
     </js-module>
-    <preference name="TENANT_ID" default="common" />
-    <preference name="CLIENT_ID" default="00000000-0000-0000-0000-000000000000" />
     <preference name="KEY_HASH" default="not-provided" />
     <platform name="android">
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="MsalPlugin">
                 <param name="android-package" value="com.wrobins.cordova.plugin.MsalPlugin" />
-                <preference name="tenantId" value="$TENANT_ID" />
-                <preference name="clientId" value="$CLIENT_ID" />
                 <preference name="keyHash" value="$KEY_HASH" />
             </feature>
         </config-file>
@@ -60,8 +56,6 @@
             <feature name="MsalPlugin">
                 <param name="ios-package" value="MsalPlugin" />
                 <param name="onload" value="true" />
-                <preference name="tenantId" value="$TENANT_ID" />
-                <preference name="clientId" value="$CLIENT_ID" />
             </feature>
             <feature name="">
                 <param name="ios-package" value="" />
@@ -135,8 +129,6 @@
           <feature name="MsalPlugin">
             <param name="browser-package" value="MsalPlugin" />
           </feature>
-          <preference name="tenantId" value="$TENANT_ID" />
-          <preference name="clientId" value="$CLIENT_ID" />
         </config-file>
         <js-module src="src/browser/msal-browser.min.js" name="Msal">
             <merges target="msal" />
@@ -145,5 +137,4 @@
           <runs />
         </js-module>
       </platform>
-    <hook type="after_prepare" src="src/scripts/after_prepare.js" />
 </plugin>
