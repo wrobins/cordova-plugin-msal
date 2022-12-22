@@ -69,7 +69,11 @@ module.exports = {
                 options.tenantId = defaultOptions.tenantId;
             }
         }
-        cordova.exec(successCallback, errorCallback, 'MsalPlugin', 'msalInit', [JSON.stringify(options)]);
+        if (options.clientId === '') {
+            errorCallback("Client ID is missing.");
+        } else {
+            cordova.exec(successCallback, errorCallback, 'MsalPlugin', 'msalInit', [JSON.stringify(options)]);
+        }
     },
     startLogger: function(updateCallback, errorCallback, containsPII = false, logLevel = 'VERBOSE') {
         cordova.exec(updateCallback, errorCallback, 'MsalPlugin', 'startLogger', [containsPII, logLevel]);
