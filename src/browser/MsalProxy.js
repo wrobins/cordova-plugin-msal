@@ -10,7 +10,6 @@ const msalConfig = {
     }
 };
 const loginRequest = {};
-const msalAccounts = [];
 let accountMode = 'SINGLE';
 
 function msalInit(success, error, opts) {

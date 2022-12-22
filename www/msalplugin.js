@@ -19,7 +19,7 @@ module.exports = {
             webViewZoomEnabled: false,
             powerOptCheckForNetworkReqEnabled: true,
             clientId: '',
-            tenantId: ''
+            tenantId: 'common'
         }
         if (!options) {
             options = defaultOptions;

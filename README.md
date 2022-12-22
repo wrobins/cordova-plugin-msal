@@ -8,11 +8,13 @@ You can specify three variables during installation: the tenant ID and client ID
 keytool -exportcert -alias yourkeystorealias -keystore path/to/your/keystore/file.keystore | openssl sha1 -binary | openssl base64
 </pre>
 If you aren't using AzureADMyOrg as one of your authorities, you can omit TENANT_ID, and if you're only building for iOS, you can omit KEY_HASH, but you really need to provide CLIENT_ID.
+### Update:
+Moving forward, TENANT_ID and CLIENT_ID are now deprecated as install variables and are now designed to be passed in msalInit() (see below).
 ### If you're using a CLI:
 <pre>
-cordova plugin add cordova-plugin-msal --variable TENANT_ID=your-tenant-guid-here --variable CLIENT_ID=your-client-guid-here --variable KEY_HASH=S0m3K3yh4shH3re=
+cordova plugin add cordova-plugin-msal --variable TENANT_ID=your-tenant-guid-here-optional-deprecated --variable CLIENT_ID=your-client-guid-here-optional-deprecated --variable KEY_HASH=S0m3K3yh4shH3re=
 </pre>
-Note that since the added support for multiple tentants/clients, you can now provide these IDs in via `msalInit` if they are not available at build time.
+Note that since the added support for multiple tentants/clients, you can now provide these IDs in via `msalInit` if they are not available at build time. These are now deprecated at install-time and will be removed soon.
 ### If you're using OutSystems
 You should use my [forge component](https://www.outsystems.com/forge/Component_Overview.aspx?ProjectId=8038). But if you want to implement a wrapper yourself, or if you're here because you're using that component and you want additional documentation, continue reading:
 
@@ -26,15 +28,15 @@ Here's the JSON you'll need to configure your plugin. If you only have one envir
 <pre>
 {
     "plugin": {
-        "url": "https://github.com/wrobins/cordova-plugin-msal.git#v3.0.0-alpha.0",
+        "url": "https://github.com/wrobins/cordova-plugin-msal.git#v3.0.0",
         "variables": [
             {
                 "name": "TENANT_ID",
-                "value": "your-tenant-guid-here-optional"
+                "value": "your-tenant-guid-here-optional-deprecated"
             },
             {
                 "name": "CLIENT_ID",
-                "value": "your-client-guid-here-required"
+                "value": "your-client-guid-here-optional-deprecated"
             },
             {
                 "name": "KEY_HASH",
@@ -77,7 +79,9 @@ The options parameter is an object that contains all of your MSAL configuration 
     scopes: ['User.Read'],
     webViewZoomControlsEnabled: false,
     webViewZoomEnabled: false,
-    powerOptCheckForNetworkReqEnabled: true
+    powerOptCheckForNetworkReqEnabled: true,
+    clientId: '',
+    tenantId: 'common'
 }
 ```
 Like I said before, this readme assumes basic knowledge of MSAL and you should look at Microsoft's documentation for how most of these attributes work, as they are named very similar both in this library and in all native platforms. But here is a basic refresher of what each option does and how to use it in this plugin.
@@ -110,6 +114,10 @@ This is a text array and represents the information MSAL requests from the Graph
 Android-only: Optional zoom controls for defining web view behavior. Default: false
 #### powerOptCheckForNetworkReqEnabled
 Android-only: Check power optimization setting before attempting network in doze mode. Default: true
+#### clientId
+This is the client ID you got from Microsoft for your Azure application.
+#### tenantId
+If you are using a custom Azure tenant you need to supply it here. Default: 'common'
 
 Ok, you have your plugin initialized with your organization's configuration. Here's how you sign users in and out:
 ### Single Client
@@ -202,7 +210,7 @@ This is usually the account's email address that they would use to sign in.
 #### claims
 This is an array of key/value pairs that, depending on the organization, tenant, account, can contain lots of different pieces of information about the account, such as the user's given name, audience and tenant information, as well as the the token's issue and expiration date. But you'll have to play around with this to see what it contains.
 
-### Multiple Clients
+### Multiple Accounts
 Operation is very similar to single account mode, but with one extra method to get the accounts you need: getAccounts(). It returns an array of objects to represent accounts found in your app, defined exactly like the signin response objects outlined above. Use it to see if you need to sign in a user interactively or manually. Your signInSilent() and signOut() methods will take an account id (the GUID, not the username) as an argument to pick which account you're working with.
 
 Again, your logic might look more separate if you want to have guest access to your app, but this code without guest access should give you an idea of how this plugin works:
