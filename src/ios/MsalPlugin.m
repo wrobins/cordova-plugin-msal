@@ -6,10 +6,6 @@
 
 - (void)msalInit:(CDVInvokedUrlCommand *)command
 {
-    NSDictionary *settings = self.commandDelegate.settings;
-    self.tenantId = [settings objectForKey:[@"tenantId" lowercaseString]];
-    self.clientId = [settings objectForKey:[@"clientId" lowercaseString]];
-
     NSError *err = nil;
     NSError *msalError = nil;
     CDVPluginResult *result = nil;
