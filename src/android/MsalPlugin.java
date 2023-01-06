@@ -12,7 +12,6 @@ import org.json.JSONObject;
 
 import android.app.Activity;
 import android.content.Context;
-import android.util.Pair;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -69,15 +68,9 @@ public class MsalPlugin extends CordovaPlugin {
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
-
         activity = cordova.getActivity();
         context = webView.getContext();
-
-        clientId = this.preferences.getString("clientId","");
-        tenantId = this.preferences.getString("tenantId","common");
         keyHash = this.preferences.getString("keyHash","");
-
-
     }
 
     @Override
