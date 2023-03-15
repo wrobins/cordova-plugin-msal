@@ -43,6 +43,7 @@ function signInSilent(success, error, opts) {
                         account: {
                             id: resp.uniqueId,
                             username: resp.account.username,
+                            idToken: resp.idToken,
                             claims: []
                         }
                     };
