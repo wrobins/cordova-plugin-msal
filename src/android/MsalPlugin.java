@@ -511,7 +511,7 @@ public class MsalPlugin extends CordovaPlugin {
             });
         }
     }
-    
+
 
     private File createConfigFile(String data) {
         File config = new File(this.context.getFilesDir() + "auth_config.json");
@@ -540,6 +540,7 @@ public class MsalPlugin extends CordovaPlugin {
         try {
             resultObj.put("token", result.getAccessToken());
             resultObj.put("account", getAccountObject(result.getAccount()));
+            resultObj.put("idToken", result.getAccount().getIdToken());
         } catch (JSONException e) {
             MsalPlugin.this.callbackContext.error(e.getMessage());
         }

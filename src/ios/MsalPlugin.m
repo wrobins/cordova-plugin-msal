@@ -9,7 +9,7 @@
     NSError *err = nil;
     NSError *msalError = nil;
     CDVPluginResult *result = nil;
-    
+
     MSALAuthority *defaultAuthority;
     NSMutableArray<MSALAuthority *> *allAuthorities = [[NSMutableArray alloc] init];
 
@@ -84,7 +84,7 @@
             defaultAuthority = authority;
         }
     }
-    
+
     self.config = [[MSALPublicClientApplicationConfig alloc] initWithClientId:[self clientId] redirectUri:[NSString stringWithFormat:@"msauth.%@://auth", [[NSBundle mainBundle] bundleIdentifier]] authority:defaultAuthority];
     [self.config setKnownAuthorities:[[NSArray<MSALAuthority *> alloc] initWithArray:allAuthorities copyItems:YES]];
     [self.config setMultipleCloudsSupported:[options objectForKey:@"multipleCloudsSupported"] == [NSNumber numberWithBool:YES]];
@@ -126,6 +126,7 @@
     NSMutableDictionary *obj = [[NSMutableDictionary alloc] initWithCapacity:2];
     [obj setValue:result.accessToken forKey:@"token"];
     [obj setValue:[self getAccountObject:result.account] forKey:@"account"];
+    [obj setValue:result.idToken forKey:@"idToken"];
     return [[NSDictionary alloc] initWithDictionary:obj];
 }
 
@@ -153,7 +154,7 @@
     CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
     [result setKeepCallbackAsBool:YES];
     [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
-    
+
     if ([command.arguments objectAtIndex:0] == [NSNumber numberWithBool:NO]) {
         MSALGlobalConfig.loggerConfig.logMaskingLevel = MSALLogMaskingSettingsMaskAllPII;
     }
@@ -161,7 +162,7 @@
     {
         MSALGlobalConfig.loggerConfig.logMaskingLevel = MSALLogMaskingSettingsMaskSecretsOnly;
     }
-    
+
     if ([[command.arguments objectAtIndex:1] isEqualToString:@"ERROR"])
     {
         MSALGlobalConfig.loggerConfig.logLevel = MSALLogLevelError;
@@ -178,7 +179,7 @@
     {
         MSALGlobalConfig.loggerConfig.logLevel = MSALLogLevelVerbose;
     }
-    
+
     [MSALGlobalConfig.loggerConfig setLogCallback:^(MSALLogLevel level, NSString * _Nullable message, BOOL containsPII) {
         NSMutableDictionary *logEntry = [[NSMutableDictionary alloc] initWithCapacity:6];
         NSCharacterSet *separators = [NSCharacterSet characterSetWithCharactersInString:@" []"];
@@ -206,7 +207,7 @@
                 logLevel = @"VERBOSE";
             }
             NSString *messageText;
-            
+
             // The MSAL Log Text can be in one of two formats which changes how we have to parse it out.
             if ([[messageData objectAtIndex:9] isEqualToString:@"-"])
             {
@@ -218,14 +219,14 @@
                 correlationId = @"UNSET";
                 messageText = [[message componentsSeparatedByString:@"] "] objectAtIndex:1];
             }
-            
+
             [logEntry setValue:timestamp forKey:@"timestamp"];
             [logEntry setValue:[NSNumber numberWithInteger:threadId] forKey:@"threadId"];
             [logEntry setValue:correlationId forKey:@"correlationId"];
             [logEntry setValue:logLevel forKey:@"logLevel"];
             [logEntry setValue:[NSNumber numberWithBool:containsPII] forKey:@"containsPII"];
             [logEntry setValue:messageText forKey:@"message"];
-            
+
             CDVPluginResult *logUpdate = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:logEntry];
             [logUpdate setKeepCallbackAsBool:YES];
             [self.commandDelegate sendPluginResult:logUpdate callbackId:command.callbackId];
@@ -278,7 +279,7 @@
             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
             return;
         }
-            
+
         MSALSilentTokenParameters *silentParams = [[MSALSilentTokenParameters alloc] initWithScopes:[self scopes] account:account];
         [[self application] acquireTokenSilentWithParameters:silentParams completionBlock:^(MSALResult *result, NSError *error) {
             if (!error)
@@ -293,7 +294,7 @@
                     CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No account currently exists"];
                     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
                 }
-                    
+
                 // Other errors may require trying again later, or reporting authentication problems to the user
             }
         }];
@@ -310,21 +311,21 @@
     else
     {
         MSALWebviewParameters *webParameters = [[MSALWebviewParameters alloc] initWithAuthPresentationViewController:[self viewController]];
-        
+
         NSError *err = nil;
         CDVPluginResult *result = nil;
-        
+
         NSString *loginHint = (NSString *)[command.arguments objectAtIndex:0];
         NSString *prompt = (NSString *)[command.arguments objectAtIndex:1];
         NSString *webViewType = (NSString *)[command.arguments objectAtIndex:4];
-        
+
         if (err)
         {
             result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[NSString stringWithFormat:@"Error parsing options object: %@", err]];
             [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
             return;
         }
-        
+
         if (![webViewType isEqual:[NSNull null]]) {
             if ([webViewType isEqualToString:@"WK_WEB_VIEW"])
             {
@@ -337,12 +338,12 @@
         }
 
         MSALInteractiveTokenParameters *interactiveParams = [[MSALInteractiveTokenParameters alloc] initWithScopes:[self scopes] webviewParameters:webParameters];
-        
+
         if (![loginHint isEqual:[NSNull null]])
         {
             interactiveParams.loginHint = loginHint;
         }
-        
+
         if (![prompt isEqual:[NSNull null]]) {
             if ([prompt isEqualToString:@"SELECT_ACCOUNT"])
             {
@@ -357,7 +358,7 @@
                 interactiveParams.promptType = MSALPromptTypeConsent;
             }
         }
-        
+
         NSArray *queryStrings = [command.arguments objectAtIndex:2];
         NSMutableDictionary *extraQueryParameers = [[NSMutableDictionary alloc] init];
         for (NSDictionary *queryString in queryStrings)
@@ -366,7 +367,7 @@
         }
         interactiveParams.extraQueryParameters = [[NSDictionary alloc] initWithDictionary:extraQueryParameers];
         interactiveParams.extraScopesToConsent = [command.arguments objectAtIndex:3];;
-        
+
         [[self application] acquireTokenWithParameters:interactiveParams completionBlock:^(MSALResult *result, NSError *error) {
             if (!error)
             {
