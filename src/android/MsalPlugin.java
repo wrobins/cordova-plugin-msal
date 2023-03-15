@@ -541,7 +541,6 @@ public class MsalPlugin extends CordovaPlugin {
             resultObj.put("token", result.getAccessToken());
             resultObj.put("account", getAccountObject(result.getAccount()));
             resultObj.put("idToken", result.getAccount().getIdToken());
-
         } catch (JSONException e) {
             MsalPlugin.this.callbackContext.error(e.getMessage());
         }
