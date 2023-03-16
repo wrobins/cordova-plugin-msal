@@ -31,6 +31,7 @@ interface JwtAccount {
 
 interface JwtToken {
   token: string;
+  idToken: string;
   account: JwtAccount;
 }
 
