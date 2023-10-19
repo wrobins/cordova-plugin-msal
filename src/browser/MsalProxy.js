@@ -39,6 +39,7 @@ function signInSilent(success, error, opts) {
             msalApp.acquireTokenSilent(loginRequest)
                 .then(resp => {
                     const account = {
+                        idToken: resp.idToken,
                         token: resp.accessToken,
                         account: {
                             id: resp.uniqueId,
@@ -97,6 +98,7 @@ function signInInteractive(success, error, opts) {
             .then(resp => {
                 const account = {
                     token: resp.accessToken,
+                    idToken: resp.idToken,
                     account: {
                         id: resp.uniqueId,
                         username: resp.account.username,
