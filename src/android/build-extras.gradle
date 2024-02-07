@@ -6,4 +6,5 @@ repositories {
 configurations {
     all*.exclude group: 'io.opentelemetry', module: 'opentelemetry-api'
     all*.exclude group: 'io.opentelemetry', module: 'opentelemetry-context'
+    all*.exclude group: 'io.opentelemetry', module: 'opentelemetry-bom'
 }
