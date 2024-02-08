@@ -3,6 +3,7 @@ repositories {
         url 'https://pkgs.dev.azure.com/MicrosoftDeviceSDK/DuoSDK-Public/_packaging/Duo-SDK-Feed/maven/v1'
     }
 }
+
 dependencies {
     implementation('com.microsoft.identity.client:msal:5.0.+') {
         exclude group: 'io.opentelemetry'
