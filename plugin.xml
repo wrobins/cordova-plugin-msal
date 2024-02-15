@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
-        id="cordova-plugin-msal" version="4.0.4">
+        id="cordova-plugin-msal" version="4.1.0">
     <name>Cordova MSAL Plugin</name>
     <description>A Cordova plugin providing a wrapper for Microsoft's MSAL library for Android and iOS.</description>
     <author>Walter Robins</author>
@@ -48,7 +48,7 @@
         </config-file>
         <source-file src="src/android/MsalPlugin.java" target-dir="src/com/wrobins/cordova/plugin" />
         <framework src="src/android/build-extras.gradle" custom="true" type="gradleReference" />
-        <framework src="com.microsoft.identity.client:msal:5.0.+" />
+        <framework src="com.microsoft.identity.client:msal:5.1.0" />
     </platform>
     <platform name="ios">
         <config-file target="config.xml" parent="/*">

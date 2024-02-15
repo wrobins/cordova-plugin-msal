@@ -4,10 +4,4 @@ repositories {
     }
 }
 
-dependencies {
-    implementation('com.microsoft.identity.client:msal:5.0.+') {
-        exclude group: 'io.opentelemetry'
-    }
-    implementation 'io.opentelemetry:opentelemetry-api:1.18.0'
-    implementation 'io.opentelemetry:opentelemetry-context:1.18.0'
-}
+ext.cdvCompileSdkVersion = 34

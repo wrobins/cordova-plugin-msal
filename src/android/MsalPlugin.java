@@ -13,6 +13,8 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -24,8 +26,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.microsoft.identity.client.AcquireTokenParameters;
+import com.microsoft.identity.client.AcquireTokenSilentParameters;
 import com.microsoft.identity.client.AuthenticationCallback;
 import com.microsoft.identity.client.IAccount;
 import com.microsoft.identity.client.IAuthenticationResult;
@@ -36,6 +40,7 @@ import com.microsoft.identity.client.Logger;
 import com.microsoft.identity.client.Prompt;
 import com.microsoft.identity.client.PublicClientApplication;
 import com.microsoft.identity.client.MultipleAccountPublicClientApplication;
+import com.microsoft.identity.client.SilentAuthenticationCallback;
 import com.microsoft.identity.client.exception.MsalException;
 
 
@@ -130,7 +135,6 @@ public class MsalPlugin extends CordovaPlugin {
                             prompt = Prompt.CONSENT;
                             break;
                         default:
-                            prompt = Prompt.WHEN_REQUIRED;
                     }
                 }
                 List<Map.Entry<String, String>> authorizationQueryStringParameters = new ArrayList<>();
@@ -141,9 +145,7 @@ public class MsalPlugin extends CordovaPlugin {
                         JSONObject queryParam = queryParams.getJSONObject(i);
                         params.put(queryParam.getString("param"), queryParam.getString("value"));
                     }
-                    for (Map.Entry<String, String> param: params.entrySet()) {
-                        authorizationQueryStringParameters.add(param);
-                    }
+                    authorizationQueryStringParameters.addAll(params.entrySet());
                 }
                 ArrayList<String> scopes = new ArrayList<String>();
                 String[] otherScopesToAuthorize = new String[] {};
@@ -151,7 +153,7 @@ public class MsalPlugin extends CordovaPlugin {
                     for (int i = 0; i < args.getJSONArray(3).length(); ++i) {
                         scopes.add(args.getJSONArray(3).getString(i));
                     }
-                    otherScopesToAuthorize = scopes.toArray(new String[scopes.size()]);
+                    otherScopesToAuthorize = scopes.toArray(new String[0]);
                 }
                 this.signinUserInteractive(loginHint, authorizationQueryStringParameters, prompt, otherScopesToAuthorize);
             }
@@ -188,16 +190,16 @@ public class MsalPlugin extends CordovaPlugin {
                         for (int i = 0; i < authoritiesList.length(); ++i) {
                             JSONObject authority = authoritiesList.getJSONObject(i);
                             authorities.append("      {\n");
-                            authorities.append("        \"type\": \"" + authority.getString("type") + "\",\n");
+                            authorities.append("        \"type\": \"").append(authority.getString("type")).append("\",\n");
                             authorities.append("        \"audience\": {\n");
-                            authorities.append("          \"type\": \"" + authority.getString("audience") + "\",\n");
-                            authorities.append("          \"tenant_id\": \"" + MsalPlugin.this.tenantId + "\"\n");
+                            StringBuilder audience = authorities.append("          \"type\": \"").append(authority.getString("audience")).append("\",\n");
+                            authorities.append("          \"tenant_id\": \"").append(MsalPlugin.this.tenantId).append("\"\n");
                             authorities.append("        },\n");
                             if (authority.has("authorityUrl") && !authority.getString("authorityUrl").equals("")) {
-                                authorities.append("        \"authority_url\": \"" + authority.getString("authorityUrl") + "\",\n");
+                                authorities.append("        \"authority_url\": \"").append(authority.getString("authorityUrl")).append("\",\n");
                             }
                             if (authority.has("default")) {
-                                authorities.append("        \"default\": " + authority.getBoolean("default") + "\n");
+                                authorities.append("        \"default\": ").append(authority.getBoolean("default")).append("\n");
                             }
                             if (i < authoritiesList.length() - 1) {
                                 authorities.append("      },\n");
@@ -231,13 +233,11 @@ public class MsalPlugin extends CordovaPlugin {
                         for (int i = 0; i < options.getJSONArray("scopes").length(); ++i) {
                             scopes.add(options.getJSONArray("scopes").getString(i));
                         }
-                        MsalPlugin.this.scopes = scopes.toArray(new String[scopes.size()]);
+                        MsalPlugin.this.scopes = scopes.toArray(new String[0]);
                         MsalPlugin.this.isInit = true;
                         MsalPlugin.this.callbackContext.success();
                     } catch (JSONException ignored) {}
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (MsalException e) {
+                } catch (InterruptedException | MsalException e) {
                     e.printStackTrace();
                 }
             }
@@ -323,8 +323,22 @@ public class MsalPlugin extends CordovaPlugin {
                             if (MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount() == null) {
                                 MsalPlugin.this.callbackContext.error("No account currently exists");
                             } else {
-                                IAuthenticationResult silentAuthResult = MsalPlugin.this.appSingleClient.acquireTokenSilent(MsalPlugin.this.scopes, authority);
-                                MsalPlugin.this.callbackContext.success(getAuthResult(silentAuthResult));
+                                AcquireTokenSilentParameters params = new AcquireTokenSilentParameters.Builder()
+                                        .withScopes(Arrays.asList(MsalPlugin.this.scopes))
+                                        .fromAuthority(authority)
+                                        .withCallback(new SilentAuthenticationCallback() {
+                                            @Override
+                                            public void onSuccess(IAuthenticationResult authenticationResult) {
+                                                MsalPlugin.this.callbackContext.success(getAuthResult(authenticationResult));
+                                            }
+
+                                            @Override
+                                            public void onError(MsalException exception) {
+                                                MsalPlugin.this.callbackContext.error(exception.getMessage());
+                                            }
+                                        })
+                                        .build();
+                                MsalPlugin.this.appSingleClient.acquireTokenSilent(params);
                             }
                         } catch (InterruptedException e) {
                             MsalPlugin.this.callbackContext.error(e.getMessage());
@@ -351,12 +365,23 @@ public class MsalPlugin extends CordovaPlugin {
                                 return;
                             }
                             String authority = MsalPlugin.this.appMultipleClient.getConfiguration().getDefaultAuthority().getAuthorityURL().toString();
-                            IAuthenticationResult result = MsalPlugin.this.appMultipleClient.acquireTokenSilent(
-                                    MsalPlugin.this.scopes,
-                                    MsalPlugin.this.appMultipleClient.getAccount(account),
-                                    authority
-                            );
-                            MsalPlugin.this.callbackContext.success(getAuthResult(result));
+                            AcquireTokenSilentParameters params = new AcquireTokenSilentParameters.Builder()
+                                    .withScopes(Arrays.asList(MsalPlugin.this.scopes))
+                                    .fromAuthority(authority)
+                                    .forAccount(MsalPlugin.this.appMultipleClient.getAccount(account))
+                                    .withCallback(new SilentAuthenticationCallback() {
+                                        @Override
+                                        public void onSuccess(IAuthenticationResult authenticationResult) {
+                                            MsalPlugin.this.callbackContext.success(getAuthResult(authenticationResult));
+                                        }
+
+                                        @Override
+                                        public void onError(MsalException exception) {
+                                            MsalPlugin.this.callbackContext.error(exception.getMessage());
+                                        }
+                                    })
+                                    .build();
+                            MsalPlugin.this.appMultipleClient.acquireTokenSilent(params);
                         } catch (InterruptedException e) {
                             MsalPlugin.this.callbackContext.error(e.getMessage());
                         } catch (MsalException e) {
@@ -370,7 +395,7 @@ public class MsalPlugin extends CordovaPlugin {
 
     private void signinUserInteractive(final String loginHint, final List<Map.Entry<String, String>> authorizationQueryStringParameters, final Prompt prompt, final String[] otherScopesToAuthorize) {
         if (this.checkConfigInit()) {
-            if (this.SINGLE_ACCOUNT.equals(this.accountMode)) {
+            if (SINGLE_ACCOUNT.equals(this.accountMode)) {
                 cordova.getThreadPool().execute(new Runnable() {
                     @Override
                     public void run() {
@@ -444,7 +469,7 @@ public class MsalPlugin extends CordovaPlugin {
 
     private void signOut(final String account) {
         this.checkConfigInit();
-        if (this.SINGLE_ACCOUNT.equals(this.accountMode)) {
+        if (SINGLE_ACCOUNT.equals(this.accountMode)) {
             cordova.getThreadPool().execute(new Runnable() {
                 @Override
                 public void run() {
@@ -471,7 +496,7 @@ public class MsalPlugin extends CordovaPlugin {
                                 }
 
                                 @Override
-                                public void onError(MsalException e) {
+                                public void onError(@NonNull MsalException e) {
                                     MsalPlugin.this.callbackContext.error(e.getMessage());
                                 }
                             });
@@ -498,7 +523,7 @@ public class MsalPlugin extends CordovaPlugin {
                                     }
 
                                     @Override
-                                    public void onError(MsalException e) {
+                                    public void onError(@NonNull MsalException e) {
                                         MsalPlugin.this.callbackContext.error(e.getMessage());
                                     }
                                 });
@@ -552,7 +577,7 @@ public class MsalPlugin extends CordovaPlugin {
         try {
             acct.put("id", account.getId());
             acct.put("username", account.getUsername());
-            acct.put("claims", processClaims(account.getClaims()));
+            acct.put("claims", processClaims(Objects.requireNonNull(account.getClaims())));
         } catch (JSONException e) {
             MsalPlugin.this.callbackContext.error(e.getMessage());
         }
