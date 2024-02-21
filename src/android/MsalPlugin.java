@@ -326,6 +326,7 @@ public class MsalPlugin extends CordovaPlugin {
                                 AcquireTokenSilentParameters params = new AcquireTokenSilentParameters.Builder()
                                         .withScopes(Arrays.asList(MsalPlugin.this.scopes))
                                         .fromAuthority(authority)
+                                        .forAccount(MsalPlugin.this.appSingleClient.getCurrentAccount().getCurrentAccount())
                                         .withCallback(new SilentAuthenticationCallback() {
                                             @Override
                                             public void onSuccess(IAuthenticationResult authenticationResult) {
@@ -338,7 +339,7 @@ public class MsalPlugin extends CordovaPlugin {
                                             }
                                         })
                                         .build();
-                                MsalPlugin.this.appSingleClient.acquireTokenSilent(params);
+                                MsalPlugin.this.appSingleClient.acquireTokenSilentAsync(params);
                             }
                         } catch (InterruptedException e) {
                             MsalPlugin.this.callbackContext.error(e.getMessage());
@@ -381,7 +382,7 @@ public class MsalPlugin extends CordovaPlugin {
                                         }
                                     })
                                     .build();
-                            MsalPlugin.this.appMultipleClient.acquireTokenSilent(params);
+                            MsalPlugin.this.appMultipleClient.acquireTokenSilentAsync(params);
                         } catch (InterruptedException e) {
                             MsalPlugin.this.callbackContext.error(e.getMessage());
                         } catch (MsalException e) {
