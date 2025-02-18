@@ -10,8 +10,8 @@
     <repo>https://github.com/wrobins/cordova-plugin-msal.git</repo>
     <issue>https://github.com/wrobins/cordova-plugin-msal/issues</issue>
     <engines>
-        <engine name="cordova-android" version=">=9.0.0"/>
-        <engine name="cordova-ios" version=">=6.1.1"/>
+        <engine name="cordova-android" version=">=10.0.0"/>
+        <engine name="cordova-ios" version=">=7.0.0"/>
         <engine name="cordova-browser" version=">=6.0.0"/>
     </engines> 
     <js-module src="www/msalplugin.js" name="msalPlugin">
