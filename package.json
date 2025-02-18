@@ -12,7 +12,7 @@
     },
     "repository": {
       "type": "git",
-      "url": "git+https://github.com/wrobins/cordova-plugin-msal.git"
+      "url": "git+https://github.com/FedFieldMarketing/cordova-plugin-msal.git"
     },
     "keywords": [
       "cordova",
@@ -29,8 +29,8 @@
     "engines": {
       "cordovaDependencies": {
         "4.0.0": { 
-          "cordova-android": ">=10.0.0",
-          "cordova": ">=10.0.0",
+          "cordova-android": ">=12.0.0",
+          "cordova": ">=12.0.0",
           "cordova-ios": ">=7.0.0",
           "cordova-browser": ">=6.0.0"
         }
@@ -39,8 +39,8 @@
     "author": "Walter Robins <wrobins@kent.edu>",
     "license": "Apache 2.0",
     "bugs": {
-      "url": "https://github.com/wrobins/cordova-plugin-msal/issues"
+      "url": "https://github.com/FedFieldMarketing/cordova-plugin-msal/issues"
     },
     "types": "./index.d.ts",
-    "homepage": "https://github.com/wrobins/cordova-plugin-msal"
+    "homepage": "https://github.com/FedFieldMarketing/cordova-plugin-msal"
 }
