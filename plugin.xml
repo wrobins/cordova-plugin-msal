@@ -48,7 +48,7 @@
         </config-file>
         <source-file src="src/android/MsalPlugin.java" target-dir="src/com/wrobins/cordova/plugin" />
         <framework src="src/android/build-extras.gradle" custom="true" type="gradleReference" />
-        <framework src="com.microsoft.identity.client:msal:5.10.x" />
+        <framework src="com.microsoft.identity.client:msal:5.10.0" />
     </platform>
     <platform name="ios">
         <config-file target="config.xml" parent="/*">
